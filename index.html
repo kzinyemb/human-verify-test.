@@ -2,171 +2,223 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Human-Verify Professional Editor</title>
+    <title>Human-Verify | Analytics Suite</title>
     <style>
-        :root { --word-blue: #2b579a; --ribbon-bg: #f3f2f1; --border-color: #edebe9; }
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e6e6e6; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        :root { --word-blue: #2b579a; --excel-green: #107c10; --ribbon-bg: #f3f2f1; --border-color: #d2d0ce; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: #e6e6e6; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Quick Access Toolbar */
-        .quick-access { background: var(--word-blue); color: white; padding: 5px 15px; display: flex; gap: 15px; font-size: 12px; align-items: center; }
-        .qa-btn { cursor: pointer; padding: 2px 5px; border-radius: 3px; transition: 0.2s; }
-        .qa-btn:hover { background: rgba(255,255,255,0.2); }
-        
-        /* Ribbon Tabs */
-        .tabs { background: var(--word-blue); display: flex; padding-left: 20px; gap: 5px; }
-        .tab { padding: 8px 15px; color: white; cursor: pointer; font-size: 13px; border-radius: 4px 4px 0 0; }
+        /* Toolbars */
+        .quick-access { background: var(--word-blue); color: white; padding: 5px 15px; display: flex; gap: 15px; font-size: 12px; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.1); }
+        .tabs { background: var(--word-blue); display: flex; padding-left: 20px; }
+        .tab { padding: 8px 18px; color: white; cursor: pointer; font-size: 13px; transition: 0.2s; }
         .tab:hover { background: rgba(255,255,255,0.1); }
-        .tab.active { background: var(--ribbon-bg); color: #323130; }
+        .tab.active { background: var(--ribbon-bg); color: #323130; border-radius: 4px 4px 0 0; }
 
-        /* Ribbon Groups */
-        .ribbon-content { background: var(--ribbon-bg); height: 95px; border-bottom: 1px solid var(--border-color); display: none; padding: 5px 20px; align-items: center; gap: 20px; }
+        /* Ribbon Styles */
+        .ribbon-content { background: var(--ribbon-bg); height: 100px; border-bottom: 1px solid var(--border-color); display: none; padding: 0 20px; align-items: center; gap: 15px; }
         .ribbon-content.active { display: flex; }
+        .group { display: flex; flex-direction: column; align-items: center; border-right: 1px solid #d2d0ce; padding: 0 15px; height: 80%; justify-content: center; }
+        .group-label { font-size: 10px; color: #605e5c; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
         
-        .group { display: flex; flex-direction: column; align-items: center; border-right: 1px solid #d2d0ce; padding-right: 15px; height: 75px; justify-content: center; }
-        .group-label { font-size: 11px; color: #605e5c; margin-top: 5px; }
-        
-        .icon-btn { padding: 8px 12px; border: 1px solid transparent; background: transparent; cursor: pointer; border-radius: 4px; font-size: 14px; }
-        .icon-btn:hover { background: #edebe9; border-color: #d2d0ce; }
-        .icon-btn.active { background: #d2d0ce; }
+        /* Controls */
+        .control-row { display: flex; gap: 2px; margin-bottom: 5px; }
+        .btn { padding: 6px 10px; border: 1px solid transparent; background: transparent; cursor: pointer; border-radius: 3px; font-size: 14px; }
+        .btn:hover { background: #e1dfdd; border-color: #c8c6c4; }
+        select { padding: 2px; font-size: 12px; border: 1px solid var(--border-color); }
 
-        /* Workspace */
-        .workspace { flex-grow: 1; overflow-y: auto; display: flex; justify-content: center; padding: 40px; }
-        .paper { background: white; width: 8.5in; min-height: 11in; padding: 1in; box-shadow: 0 0 10px rgba(0,0,0,0.1); box-sizing: border-box; }
+        /* The Workspace: Word vs Sheets */
+        .workspace { flex-grow: 1; overflow: auto; display: flex; justify-content: center; padding: 40px; position: relative; }
         
-        #main-editor { width: 100%; height: 100%; border: none; outline: none; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; resize: none; overflow: hidden; }
+        /* Word View */
+        .paper { background: white; width: 8.5in; min-height: 11in; padding: 1in; box-shadow: 0 0 15px rgba(0,0,0,0.1); outline: none; transition: 0.3s; }
         
+        /* Sheets View (The Data Grid) */
+        #data-view { display: none; background: white; width: 95%; height: 90%; overflow: auto; border: 1px solid var(--border-color); }
+        table { border-collapse: collapse; width: 100%; font-size: 12px; }
+        th { background: #f8f9fa; border: 1px solid #ddd; padding: 8px; position: sticky; top: 0; }
+        td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+
         /* Status Bar */
-        .status-bar { background: var(--word-blue); color: white; padding: 3px 20px; font-size: 12px; display: flex; justify-content: space-between; }
+        .status-bar { background: var(--word-blue); color: white; padding: 4px 20px; font-size: 11px; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
 
 <div class="quick-access">
-    <span class="qa-btn" onclick="saveStatus()">💾</span> 
-    <span class="qa-btn" onclick="alert('Undo clicked')">↩️</span> 
-    <span class="qa-btn" onclick="alert('Redo clicked')">↪️</span>
-    <span style="margin-left: 20px; font-weight: bold;">Human-Verify Pro</span>
+    <span>💾</span> <span>↩️</span> <span>↪️</span> <span>🖨️</span>
+    <span style="margin-left: auto; opacity: 0.8;">User: Human_Analyst_01</span>
 </div>
 
 <div class="tabs">
-    <div class="tab active" onclick="showTab('home', this)">Home</div>
-    <div class="tab" onclick="showTab('insert', this)">Insert</div>
-    <div class="tab" onclick="showTab('review', this)">Review</div>
-    <div class="tab" onclick="downloadJSON()" style="background: #107c10; font-weight: bold;">Export Data</div>
+    <div class="tab active" id="tab-home" onclick="setView('word', 'home')">Home</div>
+    <div class="tab" id="tab-insert" onclick="setView('word', 'insert')">Insert</div>
+    <div class="tab" id="tab-data" onclick="setView('sheets', 'data')" style="background: var(--excel-green);">Data (Sheet View)</div>
+    <div class="tab" onclick="downloadJSON()" style="margin-left: auto; background: #d83b01; font-weight: bold;">Export Audit</div>
 </div>
 
-<!-- HOME RIBBON -->
+<!-- WORD: HOME RIBBON -->
 <div class="ribbon-content active" id="home-ribbon">
     <div class="group">
-        <div style="display:flex;">
-            <button class="icon-btn" onclick="formatText('bold')"><b>B</b></button>
-            <button class="icon-btn" onclick="formatText('italic')"><i>I</i></button>
-            <button class="icon-btn" onclick="formatText('underline')"><u>U</u></button>
+        <div class="control-row">
+            <select id="fontName" onchange="execCmd('fontName', this.value)">
+                <option value="Arial">Arial</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Courier New">Courier</option>
+            </select>
+            <select id="fontSize" onchange="execCmd('fontSize', this.value)">
+                <option value="3">12pt</option>
+                <option value="4">14pt</option>
+                <option value="5">18pt</option>
+            </select>
+        </div>
+        <div class="control-row">
+            <button class="btn" onclick="execCmd('bold')"><b>B</b></button>
+            <button class="btn" onclick="execCmd('italic')"><i>I</i></button>
+            <button class="btn" onclick="execCmd('underline')"><u>U</u></button>
+            <input type="color" onchange="execCmd('foreColor', this.value)" style="width: 25px; height: 25px; border:none; padding:0; background:none; cursor:pointer;">
         </div>
         <div class="group-label">Font</div>
     </div>
     <div class="group">
-        <div style="display:flex;">
-            <button class="icon-btn" onclick="formatText('left')">≡</button>
-            <button class="icon-btn" onclick="formatText('center')">≣</button>
+        <div class="control-row">
+            <button class="btn" onclick="execCmd('justifyLeft')">≡</button>
+            <button class="btn" onclick="execCmd('justifyCenter')">≣</button>
+            <button class="btn" onclick="execCmd('insertUnorderedList')">•—</button>
         </div>
         <div class="group-label">Paragraph</div>
     </div>
 </div>
 
-<!-- INSERT RIBBON -->
+<!-- WORD: INSERT RIBBON -->
 <div class="ribbon-content" id="insert-ribbon">
     <div class="group">
-        <button class="icon-btn" onclick="alert('Table feature coming soon')">▦ Table</button>
-        <button class="icon-btn" onclick="alert('Image feature coming soon')">🖼️ Image</button>
+        <button class="btn" onclick="alert('Table tool coming soon')">▦ Table</button>
+        <button class="btn" onclick="alert('Image upload coming soon')">🖼️ Picture</button>
         <div class="group-label">Illustrations</div>
     </div>
 </div>
 
-<!-- REVIEW RIBBON -->
-<div class="ribbon-content" id="review-ribbon">
+<!-- SHEETS: DATA RIBBON -->
+<div class="ribbon-content" id="data-ribbon">
     <div class="group">
-        <button class="icon-btn" style="color: #2b579a; font-weight: bold;" onclick="calculateScore()">🔍 Run Verification Audit</button>
-        <div class="group-label">Human Proofing</div>
+        <button class="btn" onclick="refreshDataGrid()">🔄 Refresh Data Grid</button>
+        <div class="group-label">Analysis</div>
+    </div>
+    <div class="group">
+        <div style="font-size: 12px; font-weight: bold; color: var(--excel-green);">Status: SYNCED TO LOG</div>
+        <div class="group-label">Database</div>
     </div>
 </div>
 
 <div class="workspace">
-    <div class="paper">
-        <textarea id="main-editor" placeholder="Start writing..."></textarea>
+    <!-- The Word Document -->
+    <div id="word-view" class="paper" contenteditable="true" oninput="updateStats()">
+        Type your masterpiece here...
+    </div>
+
+    <!-- The Google Sheets / Grid View -->
+    <div id="data-view">
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp (ms)</th>
+                    <th>Key Pressed</th>
+                    <th>Action Type</th>
+                    <th>Cumulative Count</th>
+                </tr>
+            </thead>
+            <tbody id="data-grid-body">
+                <tr><td colspan="4" style="text-align:center;">No data captured yet. Start typing in 'Home' tab.</td></tr>
+            </tbody>
+        </table>
     </div>
 </div>
 
 <div class="status-bar">
-    <div>Words: <span id="word-count">0</span></div>
-    <div>Keystroke DNA Captured: <span id="key-count">0</span></div>
-    <div id="save-msg">Ready</div>
+    <div>Page 1 of 1 | Words: <span id="word-count">0</span></div>
+    <div>Keystroke DNA Captured: <span id="key-count">0</span> events</div>
+    <div>100% Human Authenticity Logged</div>
 </div>
 
 <script>
     let log = [];
     let startTime = null;
 
-    const editor = document.getElementById('main-editor');
-    const keyDisplay = document.getElementById('key-count');
-    const wordDisplay = document.getElementById('word-count');
+    // --- WORD COMMANDS ---
+    function execCmd(command, value = null) {
+        document.execCommand(command, false, value);
+        logAction('format', command);
+    }
 
-    // 1. Make Tabs Work
-    function showTab(tabId, element) {
-        // Hide all ribbons
+    // --- VIEW SWITCHER (Word vs Sheets) ---
+    function setView(viewMode, ribbonId) {
+        // Switch Ribbons
         document.querySelectorAll('.ribbon-content').forEach(r => r.classList.remove('active'));
-        // Deactivate all tabs
+        document.getElementById(ribbonId + '-ribbon').classList.add('active');
+        
+        // Switch Tabs
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        
-        // Activate current
-        document.getElementById(tabId + '-ribbon').classList.add('active');
-        element.classList.add('active');
+        document.getElementById('tab-' + ribbonId).classList.add('active');
+
+        // Switch Workspaces
+        if(viewMode === 'word') {
+            document.getElementById('word-view').style.display = 'block';
+            document.getElementById('data-view').style.display = 'none';
+        } else {
+            document.getElementById('word-view').style.display = 'none';
+            document.getElementById('data-view').style.display = 'block';
+            refreshDataGrid();
+        }
     }
 
-    // 2. Formatting Simulation (Visual only for now)
-    function formatText(style) {
-        if(style === 'bold') editor.style.fontWeight = editor.style.fontWeight === 'bold' ? 'normal' : 'bold';
-        if(style === 'italic') editor.style.fontStyle = editor.style.fontStyle === 'italic' ? 'normal' : 'italic';
-        if(style === 'center') editor.style.textAlign = editor.style.textAlign === 'center' ? 'left' : 'center';
-        if(style === 'left') editor.style.textAlign = 'left';
-        
-        // Log this action as part of the "Human DNA"
-        log.push({ action: 'format', type: style, t: Date.now() - startTime });
-    }
-
-    // 3. Quick Access Feedback
-    function saveStatus() {
-        const msg = document.getElementById('save-msg');
-        msg.innerText = "Saved to Local Cache";
-        setTimeout(() => msg.innerText = "Ready", 2000);
-    }
-
-    // 4. Audit Simulation
-    function calculateScore() {
-        const score = Math.floor(Math.random() * (100 - 85 + 1) + 85);
-        alert("Verification Audit Complete.\nHuman Authenticity Score: " + score + "%\n\nThis session is ready for export.");
-    }
-
-    // Keystroke Logging Logic
+    // --- DATA LOGGING ---
+    const editor = document.getElementById('word-view');
     editor.addEventListener('keydown', (e) => {
-        const now = Date.now();
-        if (!startTime) startTime = now;
-
-        log.push({ k: e.key, t: now - startTime, type: 'dn' });
-        
-        keyDisplay.innerText = log.length;
-        const words = editor.value.trim().split(/\s+/).length;
-        wordDisplay.innerText = editor.value.trim() === "" ? 0 : words;
+        if (!startTime) startTime = Date.now();
+        log.push({ k: e.key, t: Date.now() - startTime, type: 'keystroke' });
+        updateStats();
     });
+
+    function logAction(type, detail) {
+        if (!startTime) startTime = Date.now();
+        log.push({ k: detail, t: Date.now() - startTime, type: type });
+        updateStats();
+    }
+
+    function updateStats() {
+        document.getElementById('key-count').innerText = log.length;
+        const text = editor.innerText.trim();
+        const words = text === "" ? 0 : text.split(/\s+/).length;
+        document.getElementById('word-count').innerText = words;
+    }
+
+    // --- SHEETS GRID REFRESH ---
+    function refreshDataGrid() {
+        const tbody = document.getElementById('data-grid-body');
+        tbody.innerHTML = "";
+        
+        // Only show last 20 events for performance
+        const displayData = log.slice(-20).reverse();
+        
+        displayData.forEach((entry, index) => {
+            let row = `<tr>
+                <td>${entry.t}ms</td>
+                <td><b>${entry.k}</b></td>
+                <td>${entry.type}</td>
+                <td>${log.length - index}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
 
     function downloadJSON() {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(log));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "human_proof_log.json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "audit_log.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
     }
 </script>
 
