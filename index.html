@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <title>Human-Verify | Enterprise Suite</title>
-    <!-- External library for clean PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --word-blue: #2b579a; --ribbon-bg: #f3f2f1; --border-color: #d2d0ce; --hover-bg: #e1dfdd; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: #e6e6e6; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Toolbars */
-        .quick-access { background: var(--word-blue); color: white; padding: 5px 15px; display: flex; gap: 15px; font-size: 12px; align-items: center; }
-        .doc-title { margin-left: 20px; font-weight: bold; cursor: pointer; padding: 2px 8px; border-radius: 3px; }
+        /* Quick Access Toolbar - Fully Responsive */
+        .quick-access { background: var(--word-blue); color: white; padding: 5px 15px; display: flex; gap: 5px; font-size: 14px; align-items: center; }
+        .qa-btn { cursor: pointer; padding: 4px 8px; border-radius: 3px; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .qa-btn:hover { background: rgba(255,255,255,0.2); }
+        .qa-btn:active { background: rgba(255,255,255,0.4); transform: translateY(1px); }
+        
+        .doc-title { margin-left: 15px; font-weight: bold; cursor: pointer; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
         .doc-title:hover { background: rgba(255,255,255,0.2); }
 
         .tabs { background: var(--word-blue); display: flex; padding-left: 10px; }
@@ -19,13 +22,12 @@
         .tab.active { background: var(--ribbon-bg); color: #323130; border-radius: 4px 4px 0 0; }
         .tab-file { background: #1e3e6d; font-weight: bold; }
 
-        /* Ribbon */
+        /* Ribbon Styles */
         .ribbon-content { background: var(--ribbon-bg); height: 110px; border-bottom: 1px solid var(--border-color); display: none; padding: 0 20px; align-items: center; gap: 10px; }
         .ribbon-content.active { display: flex; }
         .group { display: flex; flex-direction: column; align-items: center; border-right: 1px solid #d2d0ce; padding: 0 12px; height: 85%; justify-content: center; }
         .group-label { font-size: 10px; color: #605e5c; margin-top: auto; padding-bottom: 2px; text-transform: uppercase; }
         
-        .control-row { display: flex; gap: 4px; align-items: center; margin-bottom: 5px; }
         .btn { padding: 5px 8px; border: 1px solid transparent; background: transparent; cursor: pointer; border-radius: 3px; font-size: 14px; display: flex; align-items: center; gap: 5px; }
         .btn:hover { background: var(--hover-bg); border-color: #c8c6c4; }
         .btn-big { flex-direction: column; font-size: 11px; padding: 10px; }
@@ -34,8 +36,8 @@
         select { padding: 3px; font-size: 12px; border: 1px solid var(--border-color); background: white; }
 
         /* Workspace */
-        .workspace { flex-grow: 1; overflow: auto; display: flex; justify-content: center; padding: 30px; position: relative; }
-        .paper { background: white; width: 8.5in; min-height: 11in; padding: 1in; box-shadow: 0 0 15px rgba(0,0,0,0.1); outline: none; line-height: 1.5; }
+        .workspace { flex-grow: 1; overflow: auto; display: flex; justify-content: center; padding: 30px; }
+        .paper { background: white; width: 8.5in; min-height: 11in; padding: 1in; box-shadow: 0 0 15px rgba(0,0,0,0.1); outline: none; line-height: 1.5; font-family: 'Calibri', sans-serif; }
         
         /* Status Bar */
         .status-bar { background: var(--word-blue); color: white; padding: 4px 20px; font-size: 11px; display: flex; justify-content: space-between; }
@@ -44,8 +46,12 @@
 </head>
 <body>
 
+<!-- Quick Access Toolbar -->
 <div class="quick-access">
-    <span onclick="saveToCloud()">💾</span> <span>↩️</span> <span>↪️</span>
+    <div class="qa-btn" title="Save Now" onclick="forceSave()">💾</div>
+    <div class="qa-btn" title="Undo" onclick="execCmd('undo')">↩️</div>
+    <div class="qa-btn" title="Redo" onclick="execCmd('redo')">↪️</div>
+    <div class="qa-btn" title="Print" onclick="window.print()">🖨️</div>
     <span class="doc-title" id="doc-name" onclick="renameDoc()">Document 1 - Human Verified</span>
 </div>
 
@@ -58,30 +64,23 @@
 <!-- FILE RIBBON -->
 <div class="ribbon-content" id="file-ribbon">
     <div class="group">
-        <div class="control-row">
+        <div style="display:flex; gap:5px;">
             <button class="btn btn-big" onclick="newDoc()"><span>📄</span>New</button>
             <button class="btn btn-big" onclick="exportPDF()"><span>📕</span>Export PDF</button>
-            <button class="btn btn-big" onclick="alert('Share link generated!')"><span>🔗</span>Share</button>
         </div>
         <div class="group-label">Common</div>
     </div>
     <div class="group">
-        <div class="control-row">
-            <button class="btn" onclick="downloadJSON()">📑 Download JSON Audit</button>
-            <button class="btn" onclick="window.print()">🖨️ Print</button>
-        </div>
-        <div class="control-row">
-            <button class="btn" onclick="renameDoc()">✏️ Rename</button>
-            <button class="btn" style="color:red" onclick="deleteDoc()">🗑️ Delete</button>
-        </div>
-        <div class="group-label">Manage</div>
+        <button class="btn" onclick="downloadJSON()">📑 Download JSON Audit</button>
+        <button class="btn" onclick="renameDoc()">✏️ Rename Document</button>
+        <div class="group-label">Storage</div>
     </div>
 </div>
 
 <!-- HOME RIBBON -->
 <div class="ribbon-content active" id="home-ribbon">
     <div class="group">
-        <div class="control-row">
+        <div style="display:flex; gap:4px; margin-bottom:5px;">
             <select style="width:120px" onchange="execCmd('fontName', this.value)">
                 <option value="Calibri">Calibri</option>
                 <option value="Calibri Light">Calibri Light</option>
@@ -95,7 +94,7 @@
                 <option value="6">18</option>
             </select>
         </div>
-        <div class="control-row">
+        <div style="display:flex; gap:4px;">
             <button class="btn" onclick="execCmd('bold')"><b>B</b></button>
             <button class="btn" onclick="execCmd('italic')"><i>I</i></button>
             <button class="btn" onclick="execCmd('underline')"><u>U</u></button>
@@ -103,16 +102,16 @@
         <div class="group-label">Font</div>
     </div>
     <div class="group">
-        <div class="control-row">
+        <div style="display:flex; gap:4px; margin-bottom:5px;">
             <button class="btn" onclick="execCmd('insertUnorderedList')">•—</button>
             <button class="btn" onclick="execCmd('insertOrderedList')">1.—</button>
-            <select onchange="setLineHeight(this.value)" title="Line Spacing">
+            <select onchange="setLineHeight(this.value)">
                 <option value="1.0">1.0</option>
                 <option value="1.5" selected>1.5</option>
                 <option value="2.0">2.0</option>
             </select>
         </div>
-        <div class="control-row">
+        <div style="display:flex; gap:4px;">
             <button class="btn" onclick="execCmd('justifyLeft')">≡</button>
             <button class="btn" onclick="execCmd('justifyCenter')">≣</button>
             <button class="btn" onclick="execCmd('justifyRight')">≡</button>
@@ -123,14 +122,14 @@
 
 <div class="workspace">
     <div id="word-view" class="paper" contenteditable="true" oninput="handleInput()">
-        Type your masterpiece here...
+        Start your verified draft here...
     </div>
 </div>
 
 <div class="status-bar">
     <div>Words: <span id="word-count">0</span></div>
     <div>Keystroke Log: <span id="key-count">0</span> events</div>
-    <div id="save-status" class="autosave-tag">Saving...</div>
+    <div id="save-status" class="autosave-tag">Synced</div>
 </div>
 
 <script>
@@ -138,7 +137,7 @@
     let startTime = null;
     const editor = document.getElementById('word-view');
 
-    // INITIALIZE: Load from LocalStorage
+    // INITIALIZE & LOAD
     window.onload = () => {
         const savedText = localStorage.getItem('hv_content');
         const savedLog = localStorage.getItem('hv_log');
@@ -149,47 +148,48 @@
         if (savedName) document.getElementById('doc-name').innerText = savedName;
         
         updateStats();
-        document.getElementById('save-status').innerText = "Last Saved: " + new Date().toLocaleTimeString();
     };
 
-    // AUTO-SAVE LOGIC
+    // THE ENGINE: AUTO-SAVE & INPUT
     function handleInput() {
         updateStats();
         autoSave();
     }
 
     function autoSave() {
-        document.getElementById('save-status').innerText = "Saving...";
         localStorage.setItem('hv_content', editor.innerHTML);
         localStorage.setItem('hv_log', JSON.stringify(log));
         localStorage.setItem('hv_doc_name', document.getElementById('doc-name').innerText);
         
+        document.getElementById('save-status').innerText = "Saved";
         setTimeout(() => {
-            document.getElementById('save-status').innerText = "Auto-saved";
-        }, 500);
+            document.getElementById('save-status').innerText = "Auto-synced";
+        }, 1000);
+    }
+
+    function forceSave() {
+        autoSave();
+        alert("Document and Keystroke DNA successfully committed to local storage.");
     }
 
     // PDF EXPORT
     function exportPDF() {
         const element = document.getElementById('word-view');
         const fileName = document.getElementById('doc-name').innerText + ".pdf";
-        
         const opt = {
-            margin:       1,
-            filename:     fileName,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
-            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            margin: 1,
+            filename: fileName,
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
         };
-
-        // Execute export
         html2pdf().set(opt).from(element).save();
         log.push({ action: 'export', type: 'pdf', t: Date.now() - startTime });
     }
 
-    // CORE FUNCTIONS
+    // CORE COMMANDS
     function execCmd(command, value = null) {
         document.execCommand(command, false, value);
+        if (!startTime) startTime = Date.now();
         log.push({ action: 'format', cmd: command, val: value, t: Date.now() - startTime });
         autoSave();
     }
@@ -208,7 +208,7 @@
     }
 
     function newDoc() {
-        if(confirm("Start new document? This will clear current saved data.")) {
+        if(confirm("Create new document? This clears all current history.")) {
             editor.innerHTML = "";
             log = [];
             startTime = null;
@@ -218,7 +218,7 @@
     }
 
     function renameDoc() {
-        const newName = prompt("Enter new document name:", document.getElementById('doc-name').innerText);
+        const newName = prompt("Document Name:", document.getElementById('doc-name').innerText);
         if(newName) {
             document.getElementById('doc-name').innerText = newName;
             autoSave();
@@ -229,8 +229,6 @@
     editor.addEventListener('keydown', (e) => {
         if (!startTime) startTime = Date.now();
         log.push({ k: e.key, t: Date.now() - startTime, type: 'keystroke' });
-        // Don't autoSave on every single keystroke to save performance, 
-        // handleInput (oninput) will catch the text changes.
     });
 
     function updateStats() {
@@ -244,7 +242,7 @@
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(log));
         const downloadAnchor = document.createElement('a');
         downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", "human_audit.json");
+        downloadAnchor.setAttribute("download", "audit_log.json");
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
         downloadAnchor.remove();
