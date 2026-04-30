@@ -8,7 +8,7 @@
         :root { --word-blue: #2b579a; --ribbon-bg: #f3f2f1; --border-color: #d2d0ce; --hover-bg: #e1dfdd; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: #e6e6e6; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Quick Access Toolbar - Fully Responsive */
+        /* Quick Access Toolbar */
         .quick-access { background: var(--word-blue); color: white; padding: 5px 15px; display: flex; gap: 5px; font-size: 14px; align-items: center; }
         .qa-btn { cursor: pointer; padding: 4px 8px; border-radius: 3px; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
         .qa-btn:hover { background: rgba(255,255,255,0.2); }
@@ -98,6 +98,8 @@
             <button class="btn" onclick="execCmd('bold')"><b>B</b></button>
             <button class="btn" onclick="execCmd('italic')"><i>I</i></button>
             <button class="btn" onclick="execCmd('underline')"><u>U</u></button>
+            <button class="btn" onclick="execCmd('superscript')" title="Superscript">X<sup>2</sup></button>
+            <button class="btn" onclick="execCmd('subscript')" title="Subscript">X<sub>2</sub></button>
         </div>
         <div class="group-label">Font</div>
     </div>
@@ -150,7 +152,6 @@
         updateStats();
     };
 
-    // THE ENGINE: AUTO-SAVE & INPUT
     function handleInput() {
         updateStats();
         autoSave();
@@ -172,7 +173,6 @@
         alert("Document and Keystroke DNA successfully committed to local storage.");
     }
 
-    // PDF EXPORT
     function exportPDF() {
         const element = document.getElementById('word-view');
         const fileName = document.getElementById('doc-name').innerText + ".pdf";
@@ -183,10 +183,9 @@
             jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
         };
         html2pdf().set(opt).from(element).save();
-        log.push({ action: 'export', type: 'pdf', t: Date.now() - startTime });
+        log.push({ action: 'export', type: 'pdf', t: Date.now() - (startTime || Date.now()) });
     }
 
-    // CORE COMMANDS
     function execCmd(command, value = null) {
         document.execCommand(command, false, value);
         if (!startTime) startTime = Date.now();
@@ -196,7 +195,7 @@
 
     function setLineHeight(val) {
         editor.style.lineHeight = val;
-        log.push({ action: 'spacing', val: val, t: Date.now() - startTime });
+        log.push({ action: 'spacing', val: val, t: Date.now() - (startTime || Date.now()) });
         autoSave();
     }
 
@@ -225,7 +224,6 @@
         }
     }
 
-    // LOGGING
     editor.addEventListener('keydown', (e) => {
         if (!startTime) startTime = Date.now();
         log.push({ k: e.key, t: Date.now() - startTime, type: 'keystroke' });
