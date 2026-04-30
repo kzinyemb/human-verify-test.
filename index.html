@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Human-Verify | Enterprise Suite</title>
+    <!-- External library for clean PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --word-blue: #2b579a; --ribbon-bg: #f3f2f1; --border-color: #d2d0ce; --hover-bg: #e1dfdd; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: #e6e6e6; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
@@ -37,12 +39,13 @@
         
         /* Status Bar */
         .status-bar { background: var(--word-blue); color: white; padding: 4px 20px; font-size: 11px; display: flex; justify-content: space-between; }
+        .autosave-tag { color: #afffaf; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="quick-access">
-    <span onclick="execCmd('save')">💾</span> <span>↩️</span> <span>↪️</span>
+    <span onclick="saveToCloud()">💾</span> <span>↩️</span> <span>↪️</span>
     <span class="doc-title" id="doc-name" onclick="renameDoc()">Document 1 - Human Verified</span>
 </div>
 
@@ -57,14 +60,14 @@
     <div class="group">
         <div class="control-row">
             <button class="btn btn-big" onclick="newDoc()"><span>📄</span>New</button>
-            <button class="btn btn-big" onclick="alert('Opening browser...')"><span>📂</span>Open</button>
+            <button class="btn btn-big" onclick="exportPDF()"><span>📕</span>Export PDF</button>
             <button class="btn btn-big" onclick="alert('Share link generated!')"><span>🔗</span>Share</button>
         </div>
         <div class="group-label">Common</div>
     </div>
     <div class="group">
         <div class="control-row">
-            <button class="btn" onclick="copyDoc()">📑 Create a Copy</button>
+            <button class="btn" onclick="downloadJSON()">📑 Download JSON Audit</button>
             <button class="btn" onclick="window.print()">🖨️ Print</button>
         </div>
         <div class="control-row">
@@ -119,7 +122,7 @@
 </div>
 
 <div class="workspace">
-    <div id="word-view" class="paper" contenteditable="true" oninput="updateStats()">
+    <div id="word-view" class="paper" contenteditable="true" oninput="handleInput()">
         Type your masterpiece here...
     </div>
 </div>
@@ -127,21 +130,74 @@
 <div class="status-bar">
     <div>Words: <span id="word-count">0</span></div>
     <div>Keystroke Log: <span id="key-count">0</span> events</div>
-    <div>🔒 Encrypted Verification Session Active</div>
+    <div id="save-status" class="autosave-tag">Saving...</div>
 </div>
 
 <script>
     let log = [];
     let startTime = null;
+    const editor = document.getElementById('word-view');
 
+    // INITIALIZE: Load from LocalStorage
+    window.onload = () => {
+        const savedText = localStorage.getItem('hv_content');
+        const savedLog = localStorage.getItem('hv_log');
+        const savedName = localStorage.getItem('hv_doc_name');
+
+        if (savedText) editor.innerHTML = savedText;
+        if (savedLog) log = JSON.parse(savedLog);
+        if (savedName) document.getElementById('doc-name').innerText = savedName;
+        
+        updateStats();
+        document.getElementById('save-status').innerText = "Last Saved: " + new Date().toLocaleTimeString();
+    };
+
+    // AUTO-SAVE LOGIC
+    function handleInput() {
+        updateStats();
+        autoSave();
+    }
+
+    function autoSave() {
+        document.getElementById('save-status').innerText = "Saving...";
+        localStorage.setItem('hv_content', editor.innerHTML);
+        localStorage.setItem('hv_log', JSON.stringify(log));
+        localStorage.setItem('hv_doc_name', document.getElementById('doc-name').innerText);
+        
+        setTimeout(() => {
+            document.getElementById('save-status').innerText = "Auto-saved";
+        }, 500);
+    }
+
+    // PDF EXPORT
+    function exportPDF() {
+        const element = document.getElementById('word-view');
+        const fileName = document.getElementById('doc-name').innerText + ".pdf";
+        
+        const opt = {
+            margin:       1,
+            filename:     fileName,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        // Execute export
+        html2pdf().set(opt).from(element).save();
+        log.push({ action: 'export', type: 'pdf', t: Date.now() - startTime });
+    }
+
+    // CORE FUNCTIONS
     function execCmd(command, value = null) {
         document.execCommand(command, false, value);
         log.push({ action: 'format', cmd: command, val: value, t: Date.now() - startTime });
+        autoSave();
     }
 
     function setLineHeight(val) {
-        document.getElementById('word-view').style.lineHeight = val;
+        editor.style.lineHeight = val;
         log.push({ action: 'spacing', val: val, t: Date.now() - startTime });
+        autoSave();
     }
 
     function setView(viewMode, ribbonId) {
@@ -151,40 +207,30 @@
         if(ribbonId !== 'file') document.getElementById('tab-' + ribbonId).classList.add('active');
     }
 
-    // FILE FUNCTIONS
     function newDoc() {
-        if(confirm("Start new document? Unsaved changes will be lost.")) {
-            document.getElementById('word-view').innerHTML = "";
+        if(confirm("Start new document? This will clear current saved data.")) {
+            editor.innerHTML = "";
             log = [];
             startTime = null;
+            localStorage.clear();
             updateStats();
         }
     }
 
     function renameDoc() {
         const newName = prompt("Enter new document name:", document.getElementById('doc-name').innerText);
-        if(newName) document.getElementById('doc-name').innerText = newName;
-    }
-
-    function copyDoc() {
-        alert("Creating local copy of verification session...");
-        downloadJSON();
-    }
-
-    function deleteDoc() {
-        if(confirm("Permanently delete this verification session?")) {
-            document.getElementById('word-view').innerHTML = "";
-            log = [];
-            alert("Session Deleted.");
+        if(newName) {
+            document.getElementById('doc-name').innerText = newName;
+            autoSave();
         }
     }
 
     // LOGGING
-    const editor = document.getElementById('word-view');
     editor.addEventListener('keydown', (e) => {
         if (!startTime) startTime = Date.now();
         log.push({ k: e.key, t: Date.now() - startTime, type: 'keystroke' });
-        updateStats();
+        // Don't autoSave on every single keystroke to save performance, 
+        // handleInput (oninput) will catch the text changes.
     });
 
     function updateStats() {
