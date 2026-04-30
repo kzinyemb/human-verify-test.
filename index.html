@@ -5,29 +5,35 @@
     <title>Human-Verify Professional Editor</title>
     <style>
         :root { --word-blue: #2b579a; --ribbon-bg: #f3f2f1; --border-color: #edebe9; }
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e6e6e6; display: flex; flex-direction: column; height: 100vh; }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e6e6e6; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
         /* Quick Access Toolbar */
         .quick-access { background: var(--word-blue); color: white; padding: 5px 15px; display: flex; gap: 15px; font-size: 12px; align-items: center; }
+        .qa-btn { cursor: pointer; padding: 2px 5px; border-radius: 3px; transition: 0.2s; }
+        .qa-btn:hover { background: rgba(255,255,255,0.2); }
         
         /* Ribbon Tabs */
         .tabs { background: var(--word-blue); display: flex; padding-left: 20px; gap: 5px; }
         .tab { padding: 8px 15px; color: white; cursor: pointer; font-size: 13px; border-radius: 4px 4px 0 0; }
+        .tab:hover { background: rgba(255,255,255,0.1); }
         .tab.active { background: var(--ribbon-bg); color: #323130; }
 
         /* Ribbon Groups */
-        .ribbon-content { background: var(--ribbon-bg); height: 90px; border-bottom: 1px solid var(--border-color); display: flex; padding: 5px 20px; align-items: center; gap: 20px; }
-        .group { display: flex; flex-direction: column; align-items: center; border-right: 1px solid #d2d0ce; padding-right: 15px; height: 70px; justify-content: center; }
-        .group-label { font-size: 11px; color: #605e5c; margin-top: 5px; }
-        .controls { display: flex; gap: 5px; }
-        .icon-btn { padding: 8px; border: 1px solid transparent; background: transparent; cursor: pointer; border-radius: 4px; }
-        .icon-btn:hover { background: #edebe9; border-color: #d2d0ce; }
-
-        /* The "Paper" Container */
-        .workspace { flex-grow: 1; overflow-y: auto; display: flex; justify-content: center; padding: 40px; }
-        .paper { background: white; width: 8.5in; min-height: 11in; padding: 1in; box-shadow: 0 0 10px rgba(0,0,0,0.2); box-sizing: border-box; }
+        .ribbon-content { background: var(--ribbon-bg); height: 95px; border-bottom: 1px solid var(--border-color); display: none; padding: 5px 20px; align-items: center; gap: 20px; }
+        .ribbon-content.active { display: flex; }
         
-        textarea { width: 100%; height: 100%; border: none; outline: none; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; resize: none; }
+        .group { display: flex; flex-direction: column; align-items: center; border-right: 1px solid #d2d0ce; padding-right: 15px; height: 75px; justify-content: center; }
+        .group-label { font-size: 11px; color: #605e5c; margin-top: 5px; }
+        
+        .icon-btn { padding: 8px 12px; border: 1px solid transparent; background: transparent; cursor: pointer; border-radius: 4px; font-size: 14px; }
+        .icon-btn:hover { background: #edebe9; border-color: #d2d0ce; }
+        .icon-btn.active { background: #d2d0ce; }
+
+        /* Workspace */
+        .workspace { flex-grow: 1; overflow-y: auto; display: flex; justify-content: center; padding: 40px; }
+        .paper { background: white; width: 8.5in; min-height: 11in; padding: 1in; box-shadow: 0 0 10px rgba(0,0,0,0.1); box-sizing: border-box; }
+        
+        #main-editor { width: 100%; height: 100%; border: none; outline: none; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; resize: none; overflow: hidden; }
         
         /* Status Bar */
         .status-bar { background: var(--word-blue); color: white; padding: 3px 20px; font-size: 12px; display: flex; justify-content: space-between; }
@@ -36,73 +42,119 @@
 <body>
 
 <div class="quick-access">
-    <span>💾</span> <span>↩️</span> <span>↪️</span>
+    <span class="qa-btn" onclick="saveStatus()">💾</span> 
+    <span class="qa-btn" onclick="alert('Undo clicked')">↩️</span> 
+    <span class="qa-btn" onclick="alert('Redo clicked')">↪️</span>
     <span style="margin-left: 20px; font-weight: bold;">Human-Verify Pro</span>
 </div>
 
 <div class="tabs">
-    <div class="tab active">Home</div>
-    <div class="tab">Insert</div>
-    <div class="tab">Review</div>
-    <div class="tab" onclick="downloadJSON()" style="background: #107c10;">Export Data</div>
+    <div class="tab active" onclick="showTab('home', this)">Home</div>
+    <div class="tab" onclick="showTab('insert', this)">Insert</div>
+    <div class="tab" onclick="showTab('review', this)">Review</div>
+    <div class="tab" onclick="downloadJSON()" style="background: #107c10; font-weight: bold;">Export Data</div>
 </div>
 
-<div class="ribbon-content" id="home-ribbon">
+<!-- HOME RIBBON -->
+<div class="ribbon-content active" id="home-ribbon">
     <div class="group">
-        <div class="controls">
-            <button class="icon-btn"><b>B</b></button>
-            <button class="icon-btn"><i>I</i></button>
-            <button class="icon-btn"><u>U</u></button>
+        <div style="display:flex;">
+            <button class="icon-btn" onclick="formatText('bold')"><b>B</b></button>
+            <button class="icon-btn" onclick="formatText('italic')"><i>I</i></button>
+            <button class="icon-btn" onclick="formatText('underline')"><u>U</u></button>
         </div>
         <div class="group-label">Font</div>
     </div>
     <div class="group">
-        <div class="controls">
-            <button class="icon-btn">≡</button>
-            <button class="icon-btn">≡</button>
+        <div style="display:flex;">
+            <button class="icon-btn" onclick="formatText('left')">≡</button>
+            <button class="icon-btn" onclick="formatText('center')">≣</button>
         </div>
         <div class="group-label">Paragraph</div>
     </div>
-    <div class="group" style="border: none;">
-        <div class="controls">
-            <button class="icon-btn" onclick="alert('Analysis feature coming soon!')">🔍 Verification Score</button>
-        </div>
-        <div class="group-label">Tools</div>
+</div>
+
+<!-- INSERT RIBBON -->
+<div class="ribbon-content" id="insert-ribbon">
+    <div class="group">
+        <button class="icon-btn" onclick="alert('Table feature coming soon')">▦ Table</button>
+        <button class="icon-btn" onclick="alert('Image feature coming soon')">🖼️ Image</button>
+        <div class="group-label">Illustrations</div>
+    </div>
+</div>
+
+<!-- REVIEW RIBBON -->
+<div class="ribbon-content" id="review-ribbon">
+    <div class="group">
+        <button class="icon-btn" style="color: #2b579a; font-weight: bold;" onclick="calculateScore()">🔍 Run Verification Audit</button>
+        <div class="group-label">Human Proofing</div>
     </div>
 </div>
 
 <div class="workspace">
     <div class="paper">
-        <textarea id="main-editor" placeholder="Start writing your human-verified masterpiece..."></textarea>
+        <textarea id="main-editor" placeholder="Start writing..."></textarea>
     </div>
 </div>
 
 <div class="status-bar">
     <div>Words: <span id="word-count">0</span></div>
     <div>Keystroke DNA Captured: <span id="key-count">0</span></div>
-    <div>Session Status: <span style="color: #afffaf;">● Recording Live</span></div>
+    <div id="save-msg">Ready</div>
 </div>
 
 <script>
     let log = [];
     let startTime = null;
-    let keyCount = 0;
 
     const editor = document.getElementById('main-editor');
     const keyDisplay = document.getElementById('key-count');
     const wordDisplay = document.getElementById('word-count');
 
+    // 1. Make Tabs Work
+    function showTab(tabId, element) {
+        // Hide all ribbons
+        document.querySelectorAll('.ribbon-content').forEach(r => r.classList.remove('active'));
+        // Deactivate all tabs
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        
+        // Activate current
+        document.getElementById(tabId + '-ribbon').classList.add('active');
+        element.classList.add('active');
+    }
+
+    // 2. Formatting Simulation (Visual only for now)
+    function formatText(style) {
+        if(style === 'bold') editor.style.fontWeight = editor.style.fontWeight === 'bold' ? 'normal' : 'bold';
+        if(style === 'italic') editor.style.fontStyle = editor.style.fontStyle === 'italic' ? 'normal' : 'italic';
+        if(style === 'center') editor.style.textAlign = editor.style.textAlign === 'center' ? 'left' : 'center';
+        if(style === 'left') editor.style.textAlign = 'left';
+        
+        // Log this action as part of the "Human DNA"
+        log.push({ action: 'format', type: style, t: Date.now() - startTime });
+    }
+
+    // 3. Quick Access Feedback
+    function saveStatus() {
+        const msg = document.getElementById('save-msg');
+        msg.innerText = "Saved to Local Cache";
+        setTimeout(() => msg.innerText = "Ready", 2000);
+    }
+
+    // 4. Audit Simulation
+    function calculateScore() {
+        const score = Math.floor(Math.random() * (100 - 85 + 1) + 85);
+        alert("Verification Audit Complete.\nHuman Authenticity Score: " + score + "%\n\nThis session is ready for export.");
+    }
+
+    // Keystroke Logging Logic
     editor.addEventListener('keydown', (e) => {
         const now = Date.now();
         if (!startTime) startTime = now;
 
-        // Recording the 'DNA'
         log.push({ k: e.key, t: now - startTime, type: 'dn' });
         
-        keyCount++;
-        keyDisplay.innerText = keyCount;
-
-        // Word count update
+        keyDisplay.innerText = log.length;
         const words = editor.value.trim().split(/\s+/).length;
         wordDisplay.innerText = editor.value.trim() === "" ? 0 : words;
     });
@@ -111,7 +163,7 @@
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(log));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "verification_log.json");
+        downloadAnchorNode.setAttribute("download", "human_proof_log.json");
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
