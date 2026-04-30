@@ -5,86 +5,53 @@
     <title>Human-Verify | Enterprise Suite</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* Theme Variables */
         :root { 
-            --word-blue: #2b579a; 
-            --ribbon-bg: #f3f2f1; 
-            --border-color: #d2d0ce; 
-            --hover-bg: #e1dfdd;
-            --bg-workspace: #e6e6e6;
-            --bg-paper: white;
-            --text-main: #323130;
-            --status-bar: var(--word-blue);
+            --word-blue: #2b579a; --ribbon-bg: #f3f2f1; --border-color: #d2d0ce; 
+            --hover-bg: #e1dfdd; --bg-workspace: #e6e6e6; --bg-paper: white;
+            --text-main: #323130; --status-bar: var(--word-blue);
         }
 
         [data-theme="dark"] {
-            --ribbon-bg: #2b2b2b;
-            --border-color: #444;
-            --hover-bg: #3c3c3c;
-            --bg-workspace: #1e1e1e;
-            --bg-paper: #2d2d2d;
-            --text-main: #ffffff;
+            --ribbon-bg: #2b2b2b; --border-color: #444; --hover-bg: #3c3c3c;
+            --bg-workspace: #1e1e1e; --bg-paper: #2d2d2d; --text-main: #ffffff;
             --status-bar: #1a1a1a;
         }
 
-        body { 
-            margin: 0; 
-            font-family: 'Segoe UI', sans-serif; 
-            background-color: var(--bg-workspace); 
-            color: var(--text-main);
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            transition: background 0.3s ease;
-        }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--bg-workspace); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Quick Access Toolbar */
+        /* Quick Access */
         .quick-access { background: var(--word-blue); color: white; padding: 5px 15px; display: flex; gap: 5px; font-size: 14px; align-items: center; }
-        .qa-btn { cursor: pointer; padding: 4px 8px; border-radius: 3px; transition: 0.2s; display: flex; align-items: center; }
+        .qa-btn { cursor: pointer; padding: 4px 8px; border-radius: 3px; transition: 0.2s; }
         .qa-btn:hover { background: rgba(255,255,255,0.2); }
-        
-        .doc-title { margin-left: 15px; font-weight: bold; font-size: 12px; }
+        .doc-title { margin-left: 15px; font-weight: bold; font-size: 12px; cursor: pointer; }
 
         .tabs { background: var(--word-blue); display: flex; padding-left: 10px; }
         .tab { padding: 8px 18px; color: white; cursor: pointer; font-size: 13px; }
         .tab.active { background: var(--ribbon-bg); color: var(--text-main); border-radius: 4px 4px 0 0; }
+        .tab-file { background: #1e3e6d; font-weight: bold; }
 
         /* Ribbon */
-        .ribbon-content { background: var(--ribbon-bg); height: 110px; border-bottom: 1px solid var(--border-color); display: none; padding: 0 20px; align-items: center; gap: 10px; }
+        .ribbon-content { background: var(--ribbon-bg); height: 115px; border-bottom: 1px solid var(--border-color); display: none; padding: 0 20px; align-items: center; gap: 10px; }
         .ribbon-content.active { display: flex; }
         .group { display: flex; flex-direction: column; align-items: center; border-right: 1px solid var(--border-color); padding: 0 12px; height: 85%; justify-content: center; }
         .group-label { font-size: 10px; color: #888; margin-top: auto; padding-bottom: 2px; text-transform: uppercase; }
         
         .btn { padding: 5px 8px; border: 1px solid transparent; background: transparent; cursor: pointer; border-radius: 3px; font-size: 14px; color: var(--text-main); display: flex; align-items: center; gap: 5px; }
         .btn:hover { background: var(--hover-bg); border-color: var(--border-color); }
-        .btn-big { flex-direction: column; font-size: 11px; padding: 10px; }
+        .btn-big { flex-direction: column; font-size: 11px; padding: 8px 12px; text-align: center; }
+        .btn-big span { font-size: 22px; margin-bottom: 2px; }
 
         select { padding: 3px; font-size: 12px; border: 1px solid var(--border-color); background: var(--bg-paper); color: var(--text-main); }
 
         /* Workspace */
         .workspace { flex-grow: 1; overflow: auto; display: flex; justify-content: center; padding: 30px; }
         .paper { 
-            background: var(--bg-paper); 
-            color: var(--text-main);
-            width: 8.5in; 
-            min-height: 11in; 
-            padding: 1in; 
-            box-shadow: 0 0 15px rgba(0,0,0,0.2); 
-            outline: none; 
-            line-height: 1.5; 
-            font-family: 'Calibri', sans-serif; 
-            transition: background 0.3s, color 0.3s;
+            background: var(--bg-paper); color: var(--text-main); width: 8.5in; min-height: 11in; 
+            padding: 1in; box-shadow: 0 0 15px rgba(0,0,0,0.2); outline: none; line-height: 1.5; 
+            font-family: 'Calibri', sans-serif; transition: background 0.3s;
         }
         
-        /* Status Bar */
         .status-bar { background: var(--status-bar); color: white; padding: 4px 20px; font-size: 11px; display: flex; justify-content: space-between; }
-        
-        /* Print behavior: Always print on white background */
-        @media print {
-            body, .workspace, .paper { background: white !important; color: black !important; }
-            .quick-access, .tabs, .ribbon-content, .status-bar { display: none !important; }
-            .paper { box-shadow: none; margin: 0; padding: 0; }
-        }
     </style>
 </head>
 <body>
@@ -93,47 +60,66 @@
     <div class="qa-btn" title="Save" onclick="forceSave()">💾</div>
     <div class="qa-btn" title="Undo" onclick="execCmd('undo')">↩️</div>
     <div class="qa-btn" title="Redo" onclick="execCmd('redo')">↪️</div>
-    <div class="qa-btn" title="Toggle Dark Mode" onclick="toggleTheme()" id="theme-icon">🌙</div>
-    <span class="doc-title" id="doc-name">Document 1 - Human Verified</span>
+    <div class="qa-btn" title="Theme" onclick="toggleTheme()" id="theme-icon">🌙</div>
+    <span class="doc-title" id="doc-name" onclick="renameDoc()">Document 1 - Human Verified</span>
 </div>
 
 <div class="tabs">
-    <div class="tab" onclick="setView('file')">File</div>
+    <div class="tab tab-file" onclick="setView('file')">File</div>
     <div class="tab active" id="tab-home" onclick="setView('home')">Home</div>
 </div>
 
+<!-- FILE TAB CONTENT -->
 <div class="ribbon-content" id="file-ribbon">
     <div class="group">
-        <button class="btn btn-big" onclick="exportPDF()"><span>📕</span>Export PDF</button>
-        <div class="group-label">Common</div>
+        <div style="display:flex; gap:5px;">
+            <button class="btn btn-big" onclick="newDoc()"><span>📄</span>New</button>
+            <button class="btn btn-big" onclick="openFile()"><span>📂</span>Open</button>
+            <button class="btn btn-big" onclick="createCopy()"><span>👯</span>Copy</button>
+        </div>
+        <div class="group-label">Document</div>
     </div>
     <div class="group">
-        <button class="btn" onclick="downloadJSON()">📑 Download Audit</button>
-        <div class="group-label">Data</div>
+        <div style="display:flex; gap:5px;">
+            <button class="btn btn-big" onclick="window.print()"><span>🖨️</span>Print</button>
+            <button class="btn btn-big" onclick="renameDoc()"><span>✏️</span>Rename</button>
+            <button class="btn btn-big" onclick="deleteDoc()" style="color: #d83b01;"><span>🗑️</span>Delete</button>
+        </div>
+        <div class="group-label">Manage</div>
+    </div>
+    <div class="group">
+        <button class="btn btn-big" onclick="exportPDF()"><span>📕</span>PDF</button>
+        <div class="group-label">Export</div>
     </div>
 </div>
 
+<!-- HOME TAB CONTENT -->
 <div class="ribbon-content active" id="home-ribbon">
     <div class="group">
         <div style="display:flex; gap:4px; margin-bottom:5px;">
-            <select onchange="execCmd('fontName', this.value)">
-                <option value="Calibri">Calibri</option>
-                <option value="Arial">Arial</option>
-            </select>
-            <select onchange="execCmd('fontSize', this.value)">
-                <option value="3">11</option>
-                <option value="4">12</option>
-                <option value="5">14</option>
-            </select>
+            <select onchange="execCmd('fontName', this.value)"><option value="Calibri">Calibri</option><option value="Arial">Arial</option></select>
+            <select onchange="execCmd('fontSize', this.value)"><option value="3">11</option><option value="4">12</option><option value="5">14</option></select>
         </div>
         <div style="display:flex; gap:4px;">
             <button class="btn" onclick="execCmd('bold')"><b>B</b></button>
             <button class="btn" onclick="execCmd('italic')"><i>I</i></button>
             <button class="btn" onclick="execCmd('underline')"><u>U</u></button>
-            <button class="btn" onclick="execCmd('superscript')">X<sup>2</sup></button>
-            <button class="btn" onclick="execCmd('subscript')">X<sub>2</sub></button>
+            <button class="btn" onclick="execCmd('superscript')">X²</button>
+            <button class="btn" onclick="execCmd('subscript')">X₂</button>
         </div>
         <div class="group-label">Font</div>
+    </div>
+    <div class="group">
+        <div style="display:flex; gap:4px; margin-bottom:5px;">
+            <button class="btn" onclick="execCmd('insertUnorderedList')" title="Bullets">•—</button>
+            <button class="btn" onclick="execCmd('insertOrderedList')" title="Numbers">1—</button>
+        </div>
+        <div style="display:flex; gap:4px;">
+            <button class="btn" onclick="execCmd('justifyLeft')" title="Align Left">≡</button>
+            <button class="btn" onclick="execCmd('justifyCenter')" title="Align Center">≣</button>
+            <button class="btn" onclick="execCmd('justifyRight')" title="Align Right">≡</button>
+        </div>
+        <div class="group-label">Paragraph</div>
     </div>
 </div>
 
@@ -149,6 +135,8 @@
     <div id="save-status">Synced</div>
 </div>
 
+<input type="file" id="file-input" style="display:none" onchange="loadFile(event)">
+
 <script>
     let log = [];
     let startTime = null;
@@ -159,7 +147,6 @@
             document.body.setAttribute('data-theme', 'dark');
             document.getElementById('theme-icon').innerText = "☀️";
         }
-        // Load content
         const savedText = localStorage.getItem('hv_content');
         if (savedText) editor.innerHTML = savedText;
         updateStats();
@@ -167,16 +154,73 @@
 
     function toggleTheme() {
         const isDark = document.body.getAttribute('data-theme') === 'dark';
-        if (isDark) {
-            document.body.removeAttribute('data-theme');
-            localStorage.setItem('theme', 'light');
-            document.getElementById('theme-icon').innerText = "🌙";
-        } else {
-            document.body.setAttribute('data-theme', 'dark');
-            localStorage.setItem('theme', 'dark');
-            document.getElementById('theme-icon').innerText = "☀️";
+        document.body.toggleAttribute('data-theme');
+        localStorage.setItem('theme', isDark ? 'light' : 'dark');
+        document.getElementById('theme-icon').innerText = isDark ? "🌙" : "☀️";
+        logAction('theme_toggle', isDark ? 'light' : 'dark');
+    }
+
+    /* FILE OPERATIONS */
+    function newDoc() {
+        if(confirm("Create new document? This clears current text.")) {
+            editor.innerHTML = "";
+            log = [];
+            startTime = null;
+            updateStats();
+            logAction('file_new');
         }
-        log.push({ action: 'theme_change', mode: isDark ? 'light' : 'dark', t: Date.now() - (startTime || Date.now()) });
+    }
+
+    function openFile() { document.getElementById('file-input').click(); }
+
+    function loadFile(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            editor.innerHTML = e.target.result;
+            logAction('file_open', file.name);
+            autoSave();
+        };
+        reader.readAsText(file);
+    }
+
+    function createCopy() {
+        const copyContent = editor.innerHTML;
+        const blob = new Blob([copyContent], {type: "text/html"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = document.getElementById('doc-name').innerText + " - Copy.html";
+        a.click();
+        logAction('file_copy');
+    }
+
+    function renameDoc() {
+        const newName = prompt("New Name:", document.getElementById('doc-name').innerText);
+        if(newName) {
+            document.getElementById('doc-name').innerText = newName;
+            logAction('file_rename', newName);
+            autoSave();
+        }
+    }
+
+    function deleteDoc() {
+        if(confirm("Delete this document and all its history permanently?")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
+    /* ENGINE */
+    function logAction(action, val = null) {
+        if (!startTime) startTime = Date.now();
+        log.push({ action: action, value: val, t: Date.now() - startTime });
+    }
+
+    function execCmd(command, value = null) {
+        document.execCommand(command, false, value);
+        logAction('format', command);
+        autoSave();
     }
 
     function handleInput() { updateStats(); autoSave(); }
@@ -187,24 +231,18 @@
         setTimeout(() => document.getElementById('save-status').innerText = "Synced", 1000);
     }
 
-    function forceSave() { autoSave(); alert("Saved to Local Storage."); }
+    function forceSave() { autoSave(); alert("Document DNA Saved."); }
 
     function exportPDF() {
-        const element = document.getElementById('word-view');
-        html2pdf().from(element).save('HumanVerified_Doc.pdf');
+        html2pdf().from(editor).save(document.getElementById('doc-name').innerText + '.pdf');
+        logAction('export_pdf');
     }
 
-    function execCmd(command, value = null) {
-        document.execCommand(command, false, value);
-        if (!startTime) startTime = Date.now();
-        log.push({ action: 'format', cmd: command, val: value, t: Date.now() - startTime });
-    }
-
-    function setView(ribbonId) {
+    function setView(id) {
         document.querySelectorAll('.ribbon-content').forEach(r => r.classList.remove('active'));
-        document.getElementById(ribbonId + '-ribbon').classList.add('active');
+        document.getElementById(id + '-ribbon').classList.add('active');
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        if(ribbonId === 'home') document.getElementById('tab-home').classList.add('active');
+        if(id === 'home') document.getElementById('tab-home').classList.add('active');
     }
 
     editor.addEventListener('keydown', (e) => {
@@ -214,16 +252,8 @@
 
     function updateStats() {
         document.getElementById('key-count').innerText = log.length;
-        const words = editor.innerText.trim() === "" ? 0 : editor.innerText.trim().split(/\s+/).length;
-        document.getElementById('word-count').innerText = words;
-    }
-
-    function downloadJSON() {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(log));
-        const dl = document.createElement('a');
-        dl.setAttribute("href", dataStr);
-        dl.setAttribute("download", "audit_log.json");
-        dl.click();
+        const text = editor.innerText.trim();
+        document.getElementById('word-count').innerText = text === "" ? 0 : text.split(/\s+/).length;
     }
 </script>
 
