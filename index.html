@@ -1,245 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Human-Verify | Professional Suite</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root { 
-            --word-blue: #2b579a; --ribbon-bg: #f3f2f1; --border-color: #d2d0ce; 
-            --hover-bg: #e1dfdd; --bg-workspace: #e6e6e6; --bg-paper: white; 
-            --text-main: #323130; --status-bar: var(--word-blue); 
-        }
-        /* Dark Mode Override */
-        body.dark-mode { 
-            --ribbon-bg: #2b2b2b; --border-color: #444; --hover-bg: #3c3c3c; 
-            --bg-workspace: #1e1e1e; --bg-paper: #2d2d2d; --text-main: #ffffff; 
-            --status-bar: #1a1a1a; 
-        }
-        
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--bg-workspace); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; transition: background 0.2s; }
-        .quick-access { background: var(--word-blue); color: white; padding: 5px 15px; display: flex; gap: 10px; font-size: 14px; align-items: center; z-index: 100; }
-        .score-pill { background: #107c10; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
-        .tabs { background: var(--word-blue); display: flex; padding-left: 10px; position: relative; z-index: 50; }
-        .tab { padding: 8px 18px; color: white; cursor: pointer; font-size: 13px; border-radius: 4px 4px 0 0; }
-        .tab.active { background: var(--ribbon-bg); color: var(--text-main); }
-        .tab-file { background: #1e3e6d; font-weight: bold; margin-right: 2px; }
-        
-        .ribbon-content { background: var(--ribbon-bg); height: 115px; border-bottom: 1px solid var(--border-color); display: none; padding: 0 20px; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; }
-        .ribbon-content.active { display: flex; }
-        .group { display: flex; flex-direction: column; align-items: center; border-right: 1px solid var(--border-color); padding: 0 12px; height: 85%; justify-content: center; }
-        .btn-row { display: flex; flex-direction: row; gap: 5px; align-items: center; }
-        .group-label { font-size: 10px; color: #888; margin-top: auto; padding-bottom: 2px; text-transform: uppercase; }
-        
-        .btn { padding: 5px 8px; border: 1px solid transparent; background: transparent; cursor: pointer; border-radius: 3px; font-size: 14px; color: var(--text-main); display: flex; align-items: center; gap: 5px; }
-        .btn:hover { background: var(--hover-bg); border-color: var(--border-color); }
-        .btn-big { flex-direction: column; font-size: 11px; padding: 8px 12px; text-align: center; min-width: 65px; }
-        .btn-big span { font-size: 22px; margin-bottom: 2px; }
-        
-        select { padding: 3px; font-size: 12px; border: 1px solid var(--border-color); background: var(--bg-paper); color: var(--text-main); border-radius: 2px; }
-        .workspace { flex-grow: 1; overflow: auto; display: flex; justify-content: center; padding: 30px; position: relative; }
-        .paper { background: var(--bg-paper); color: var(--text-main); width: 8.5in; min-height: 11in; padding: 1in; box-shadow: 0 0 15px rgba(0,0,0,0.2); outline: none; line-height: 1.5; font-family: 'Calibri', sans-serif; transition: background 0.2s, color 0.2s; }
-        #data-view-container { display: none; width: 85%; background: var(--bg-paper); padding: 30px; border-radius: 8px; }
-        .status-bar { background: var(--status-bar); color: white; padding: 4px 20px; font-size: 11px; display: flex; justify-content: space-between; }
-    </style>
-</head>
-<body>
+function calculateTrustScore() {
+    let b = log.filter(e => e.k === "Backspace").length;
+    let k = log.length;
+    if (k < 10) return;
 
-<div class="quick-access">
-    <div onclick="autoSave()" style="cursor:pointer" title="Save">💾</div>
-    <div onclick="toggleTheme()" style="cursor:pointer" id="theme-btn" title="Toggle Dark Mode">🌙</div>
-    <div class="score-pill">Verification: <span id="trust-score">0%</span></div>
-    <span id="doc-name" style="margin-left:auto; font-weight:bold; font-size:12px; cursor:pointer;" onclick="renameDoc()">Untitled Document</span>
-</div>
+    // 1. Backspace Factor (Humans usually backspace 8-15% of the time)
+    let backspaceRatio = (b / k);
+    let errorScore = backspaceRatio > 0.05 ? 50 : (backspaceRatio * 1000);
 
-<div class="tabs">
-    <div class="tab tab-file" onclick="setView('file')">File</div>
-    <div class="tab active" id="tab-home" onclick="setView('home')">Home</div>
-    <div class="tab" id="tab-insert" onclick="setView('insert')">Insert</div>
-    <div class="tab" id="tab-data" onclick="setView('data')" style="background:#107c10">Analytics</div>
-</div>
-
-<!-- FILE TAB -->
-<div class="ribbon-content" id="file-ribbon">
-    <div class="group">
-        <div class="btn-row">
-            <button class="btn btn-big" onclick="newDoc()"><span>📄</span>New</button>
-            <button class="btn btn-big" onclick="window.print()"><span>🖨️</span>Print</button>
-            <button class="btn btn-big" onclick="exportPDF()"><span>📕</span>PDF</button>
-        </div>
-        <div class="group-label">Document</div>
-    </div>
-    <div class="group">
-        <div class="btn-row">
-            <button class="btn btn-big" onclick="createCopy()"><span>👯</span>Copy</button>
-            <button class="btn btn-big" onclick="renameDoc()"><span>✏️</span>Rename</button>
-            <button class="btn btn-big" onclick="deleteDoc()" style="color:#d83b01"><span>🗑️</span>Delete</button>
-        </div>
-        <div class="group-label">Manage</div>
-    </div>
-</div>
-
-<!-- HOME TAB -->
-<div class="ribbon-content active" id="home-ribbon">
-    <div class="group">
-        <div style="margin-bottom:5px;">
-            <select onchange="execCmd('fontName', this.value)" style="width:140px;">
-                <option value="Calibri">Calibri</option>
-                <option value="Calibri Light">Calibri Light</option>
-                <option value="Times New Roman">Times New Roman</option>
-                <option value="Arial">Arial</option>
-            </select>
-        </div>
-        <div class="btn-row">
-            <button class="btn" onclick="execCmd('bold')"><b>B</b></button>
-            <button class="btn" onclick="execCmd('italic')"><i>I</i></button>
-            <button class="btn" onclick="execCmd('underline')"><u>U</u></button>
-        </div>
-        <div class="group-label">Font</div>
-    </div>
-    <div class="group">
-        <div class="btn-row" style="margin-bottom:5px;">
-            <button class="btn" onclick="execCmd('justifyLeft')">Align Left</button>
-            <button class="btn" onclick="execCmd('justifyCenter')">Center</button>
-            <button class="btn" onclick="execCmd('justifyRight')">Align Right</button>
-        </div>
-        <div class="btn-row">
-            <span style="font-size:11px; margin-right:5px;">Spacing:</span>
-            <select onchange="setLineSpacing(this.value)">
-                <option value="1.0">1.0</option>
-                <option value="1.15">1.15</option>
-                <option value="1.5">1.5</option>
-                <option value="2.0">2.0</option>
-            </select>
-        </div>
-        <div class="group-label">Paragraph</div>
-    </div>
-</div>
-
-<!-- INSERT TAB -->
-<div class="ribbon-content" id="insert-ribbon">
-    <div class="group">
-        <div class="btn-row">
-            <button class="btn btn-big" onclick="insertTable()"><span>📅</span>Table</button>
-            <button class="btn btn-big" onclick="insertLink()"><span>🔗</span>Link</button>
-        </div>
-        <div class="group-label">Content</div>
-    </div>
-</div>
-
-<div class="workspace">
-    <div id="word-view" class="paper" contenteditable="true" oninput="handleInput()">Start typing...</div>
-    <div id="data-view-container">
-        <h3 style="margin-top:0">Writing Velocity</h3>
-        <canvas id="wpmChart" height="150"></canvas>
-    </div>
-</div>
-
-<div class="status-bar">
-    <div>Words: <span id="word-count">0</span> | Keystrokes: <span id="key-count">0</span></div>
-    <div id="save-status">Synced</div>
-</div>
-
-<script>
-    let log = [], startTime = null, wpmData = [], chartInstance = null;
-    const editor = document.getElementById('word-view');
-
-    window.onload = () => {
-        // Load Dark Mode Preference
-        if(localStorage.getItem('theme') === 'dark') {
-            document.body.classList.add('dark-mode');
-            document.getElementById('theme-btn').innerText = "☀️";
-        }
-        const savedText = localStorage.getItem('hv_content');
-        if (savedText) editor.innerHTML = savedText;
-        updateStats();
-    };
-
-    // Velocity Snapshot Logic (Every 10s)
-    setInterval(() => {
-        if (startTime && editor.style.display !== 'none') {
-            const text = editor.innerText.trim();
-            const words = text === "" ? 0 : text.split(/\s+/).length;
-            const mins = (Date.now() - startTime) / 60000;
-            const wpm = Math.round(words / (mins || 0.01));
-            wpmData.push(wpm);
-            if(wpmData.length > 20) wpmData.shift();
-        }
-    }, 10000);
-
-    function updateChart() {
-        const ctx = document.getElementById('wpmChart').getContext('2d');
-        if(chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: wpmData.map((_, i) => i * 10 + 's'),
-                datasets: [{ label: 'WPM', data: wpmData, borderColor: '#107c10', fill: true, tension: 0.3 }]
-            },
-            options: { responsive: true, scales: { y: { beginAtZero: true } } }
-        });
+    // 2. Burst Factor (Measures if you type in biological bursts vs consistent AI speed)
+    // We check the timing between the last 10 keys
+    let latencies = [];
+    for(let i = log.length - 10; i < log.length - 1; i++) {
+        if(log[i] && log[i+1]) latencies.push(log[i+1].t - log[i].t);
     }
-
-    function setView(id) {
-        document.querySelectorAll('.ribbon-content').forEach(r => r.style.display = 'none');
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        if(id === 'data') {
-            editor.style.display = 'none';
-            document.getElementById('data-view-container').style.display = 'block';
-            document.getElementById('tab-data').classList.add('active');
-            updateChart();
-        } else {
-            editor.style.display = 'block';
-            document.getElementById('data-view-container').style.display = 'none';
-            document.getElementById(id + '-ribbon').style.display = 'flex';
-            if(id !== 'file') document.getElementById('tab-' + id).classList.add('active');
-        }
+    let variance = 0;
+    if(latencies.length > 0) {
+        let avg = latencies.reduce((a,b) => a+b) / latencies.length;
+        variance = latencies.map(x => Math.pow(x - avg, 2)).reduce((a,b) => a+b) / latencies.length;
     }
-
-    function execCmd(c, v=null) { document.execCommand(c, false, v); handleInput(); }
     
-    function setLineSpacing(val) {
-        editor.style.lineHeight = val;
-        handleInput();
-    }
+    // If variance is high (human-like), add up to 50 points
+    let rhythmScore = Math.min(50, variance / 500);
 
-    function handleInput() {
-        const t = editor.innerText.trim();
-        document.getElementById('word-count').innerText = t === "" ? 0 : t.split(/\s+/).length;
-        document.getElementById('key-count').innerText = log.length;
-        localStorage.setItem('hv_content', editor.innerHTML);
-        calculateTrustScore();
-    }
-
-    function calculateTrustScore() {
-        let b = log.filter(e => e.k === "Backspace").length;
-        let k = log.length;
-        if (k < 5) return;
-        document.getElementById('trust-score').innerText = Math.min(100, Math.floor((b/k*200)+(k/10))) + "%";
-    }
-
-    editor.addEventListener('keydown', (e) => {
-        if (!startTime) startTime = Date.now();
-        log.push({ k: e.key, t: Date.now() - startTime });
-    });
-
-    function newDoc() { if(confirm("Clear document?")) { editor.innerHTML = ""; log = []; startTime = null; wpmData = []; handleInput(); } }
-    function createCopy() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([editor.innerHTML], {type: "text/html"})); a.download = "Copy.html"; a.click(); }
-    function renameDoc() { const n = prompt("New Name:"); if(n) document.getElementById('doc-name').innerText = n; }
-    function deleteDoc() { if(confirm("Delete permanently?")) { localStorage.clear(); location.reload(); } }
-    
-    function insertTable() { document.execCommand('insertHTML', false, '<table border="1" style="width:100%; border-collapse:collapse;"><tr><td>-</td><td>-</td></tr></table><p></p>'); }
-    function insertLink() { let u = prompt("URL:"); if(u) document.execCommand('createLink', false, u); }
-    
-    function toggleTheme() { 
-        document.body.classList.toggle('dark-mode'); 
-        const isDark = document.body.classList.contains('dark-mode');
-        localStorage.setItem('theme', isDark ? 'dark' : 'light'); 
-        document.getElementById('theme-btn').innerText = isDark ? "☀️" : "🌙";
-    }
-    function autoSave() { alert("Saved successfully."); }
-    function exportPDF() { html2pdf().from(editor).save('Verified_Work.pdf'); }
-</script>
-</body>
-</html>
+    let finalScore = Math.floor(errorScore + rhythmScore);
+    document.getElementById('trust-score').innerText = Math.min(100, finalScore) + "%";
+}
