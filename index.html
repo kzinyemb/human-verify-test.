@@ -19,11 +19,15 @@
         .tab-file { background: #1e3e6d; font-weight: bold; margin-right: 2px; }
         .ribbon-content { background: var(--ribbon-bg); height: 115px; border-bottom: 1px solid var(--border-color); display: none; padding: 0 20px; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; }
         .ribbon-content.active { display: flex; }
+        
+        /* Fixed Group Layout for horizontal buttons */
         .group { display: flex; flex-direction: column; align-items: center; border-right: 1px solid var(--border-color); padding: 0 12px; height: 85%; justify-content: center; }
+        .btn-row { display: flex; flex-direction: row; gap: 5px; align-items: center; }
+        
         .group-label { font-size: 10px; color: #888; margin-top: auto; padding-bottom: 2px; text-transform: uppercase; }
         .btn { padding: 5px 8px; border: 1px solid transparent; background: transparent; cursor: pointer; border-radius: 3px; font-size: 14px; color: var(--text-main); display: flex; align-items: center; gap: 5px; }
         .btn:hover { background: var(--hover-bg); border-color: var(--border-color); }
-        .btn-big { flex-direction: column; font-size: 11px; padding: 8px 12px; text-align: center; }
+        .btn-big { flex-direction: column; font-size: 11px; padding: 8px 12px; text-align: center; min-width: 60px; }
         .btn-big span { font-size: 22px; margin-bottom: 2px; }
         select { padding: 3px; font-size: 12px; border: 1px solid var(--border-color); background: var(--bg-paper); color: var(--text-main); }
         .workspace { flex-grow: 1; overflow: auto; display: flex; justify-content: center; padding: 30px; position: relative; }
@@ -50,21 +54,27 @@
     <div class="tab" id="tab-data" onclick="setView('data')" style="background:#107c10">Analytics</div>
 </div>
 
+<!-- FILE RIBBON -->
 <div class="ribbon-content" id="file-ribbon">
     <div class="group">
-        <button class="btn btn-big" onclick="newDoc()"><span>📄</span>New</button>
-        <button class="btn btn-big" onclick="createCopy()"><span>👯</span>Copy</button>
-        <div class="group-label">Document</div>
+        <div class="btn-row">
+            <button class="btn btn-big" onclick="newDoc()"><span>📄</span>New</button>
+            <button class="btn btn-big" onclick="window.print()"><span>🖨️</span>Print</button>
+            <button class="btn btn-big" onclick="exportPDF()"><span>📕</span>PDF</button>
+        </div>
+        <div class="group-label">Document Actions</div>
     </div>
     <div class="group">
-        <button class="btn btn-big" onclick="window.print()"><span>🖨️</span>Print</button>
-        <button class="btn btn-big" onclick="renameDoc()"><span>✏️</span>Rename</button>
-        <button class="btn btn-big" onclick="deleteDoc()" style="color: #d83b01;"><span>🗑️</span>Delete</button>
-        <div class="group-label">Manage</div>
+        <div class="btn-row">
+            <button class="btn btn-big" onclick="createCopy()"><span>👯</span>Copy</button>
+            <button class="btn btn-big" onclick="renameDoc()"><span>✏️</span>Rename</button>
+            <button class="btn btn-big" onclick="deleteDoc()" style="color: #d83b01;"><span>🗑️</span>Delete</button>
+        </div>
+        <div class="group-label">Storage</div>
     </div>
-    <div class="group"><button class="btn btn-big" onclick="exportPDF()"><span>📕</span>PDF</button><div class="group-label">Export</div></div>
 </div>
 
+<!-- HOME RIBBON -->
 <div class="ribbon-content active" id="home-ribbon">
     <div class="group">
         <div style="display:flex; gap:4px; margin-bottom:5px;">
@@ -76,7 +86,7 @@
             </select>
             <select onchange="execCmd('fontSize', this.value)"><option value="3">11</option><option value="4">12</option><option value="5">14</option></select>
         </div>
-        <div style="display:flex; gap:4px;">
+        <div class="btn-row">
             <button class="btn" onclick="execCmd('bold')"><b>B</b></button>
             <button class="btn" onclick="execCmd('italic')"><i>I</i></button>
             <button class="btn" onclick="execCmd('underline')"><u>U</u></button>
@@ -86,11 +96,11 @@
         <div class="group-label">Font</div>
     </div>
     <div class="group">
-        <div style="display:flex; gap:4px; margin-bottom:5px;">
+        <div class="btn-row" style="margin-bottom:5px;">
             <button class="btn" onclick="execCmd('insertUnorderedList')">•—</button>
             <button class="btn" onclick="execCmd('insertOrderedList')">1—</button>
         </div>
-        <div style="display:flex; gap:4px;">
+        <div class="btn-row">
             <button class="btn" onclick="execCmd('justifyLeft')">≡</button>
             <button class="btn" onclick="execCmd('justifyCenter')">≣</button>
             <button class="btn" onclick="execCmd('justifyRight')">≡</button>
@@ -99,10 +109,13 @@
     </div>
 </div>
 
+<!-- INSERT RIBBON -->
 <div class="ribbon-content" id="insert-ribbon">
     <div class="group">
-        <button class="btn btn-big" onclick="insertTable()"><span>📅</span>Table</button>
-        <button class="btn btn-big" onclick="insertLink()"><span>🔗</span>Link</button>
+        <div class="btn-row">
+            <button class="btn btn-big" onclick="insertTable()"><span>📅</span>Table</button>
+            <button class="btn btn-big" onclick="insertLink()"><span>🔗</span>Link</button>
+        </div>
         <div class="group-label">Content</div>
     </div>
 </div>
