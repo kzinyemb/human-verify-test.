@@ -1,140 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Human-Verify | Enterprise Suite</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root { --word-blue: #2b579a; --ribbon-bg: #f3f2f1; --border-color: #d2d0ce; --hover-bg: #e1dfdd; --bg-workspace: #e6e6e6; --bg-paper: white; --text-main: #323130; --status-bar: var(--word-blue); }
-        [data-theme="dark"] { --ribbon-bg: #2b2b2b; --border-color: #444; --hover-bg: #3c3c3c; --bg-workspace: #1e1e1e; --bg-paper: #2d2d2d; --text-main: #ffffff; --status-bar: #1a1a1a; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--bg-workspace); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        .quick-access { background: var(--word-blue); color: white; padding: 5px 15px; display: flex; gap: 10px; font-size: 14px; align-items: center; z-index: 100; }
-        .qa-btn { cursor: pointer; padding: 4px 8px; border-radius: 3px; transition: 0.2s; }
-        .qa-btn:hover { background: rgba(255,255,255,0.2); }
-        .score-pill { background: #107c10; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
-        .tabs { background: var(--word-blue); display: flex; padding-left: 10px; position: relative; z-index: 50; }
-        .tab { padding: 8px 18px; color: white; cursor: pointer; font-size: 13px; border-radius: 4px 4px 0 0; }
-        .tab.active { background: var(--ribbon-bg); color: var(--text-main); }
-        .tab-file { background: #1e3e6d; font-weight: bold; margin-right: 2px; }
-        .ribbon-content { background: var(--ribbon-bg); height: 115px; border-bottom: 1px solid var(--border-color); display: none; padding: 0 20px; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; }
-        .ribbon-content.active { display: flex; }
-        
-        /* Fixed Group Layout for horizontal buttons */
-        .group { display: flex; flex-direction: column; align-items: center; border-right: 1px solid var(--border-color); padding: 0 12px; height: 85%; justify-content: center; }
-        .btn-row { display: flex; flex-direction: row; gap: 5px; align-items: center; }
-        
-        .group-label { font-size: 10px; color: #888; margin-top: auto; padding-bottom: 2px; text-transform: uppercase; }
-        .btn { padding: 5px 8px; border: 1px solid transparent; background: transparent; cursor: pointer; border-radius: 3px; font-size: 14px; color: var(--text-main); display: flex; align-items: center; gap: 5px; }
-        .btn:hover { background: var(--hover-bg); border-color: var(--border-color); }
-        .btn-big { flex-direction: column; font-size: 11px; padding: 8px 12px; text-align: center; min-width: 60px; }
-        .btn-big span { font-size: 22px; margin-bottom: 2px; }
-        select { padding: 3px; font-size: 12px; border: 1px solid var(--border-color); background: var(--bg-paper); color: var(--text-main); }
-        .workspace { flex-grow: 1; overflow: auto; display: flex; justify-content: center; padding: 30px; position: relative; }
-        .paper { background: var(--bg-paper); color: var(--text-main); width: 8.5in; min-height: 11in; padding: 1in; box-shadow: 0 0 15px rgba(0,0,0,0.2); outline: none; line-height: 1.5; font-family: 'Calibri', sans-serif; }
-        #data-view-container { display: none; width: 80%; background: var(--bg-paper); padding: 20px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
-        .status-bar { background: var(--status-bar); color: white; padding: 4px 20px; font-size: 11px; display: flex; justify-content: space-between; }
-    </style>
-</head>
-<body>
-
-<div class="quick-access">
-    <div class="qa-btn" onclick="forceSave()">💾</div>
-    <div class="qa-btn" onclick="execCmd('undo')">↩️</div>
-    <div class="qa-btn" onclick="execCmd('redo')">↪️</div>
-    <div class="qa-btn" onclick="toggleTheme()" id="theme-icon">🌙</div>
-    <div class="score-pill">Verification: <span id="trust-score">0%</span></div>
-    <span id="doc-name" style="margin-left:auto; font-weight:bold; font-size:12px; cursor:pointer;" onclick="renameDoc()">Untitled Document</span>
-</div>
-
-<div class="tabs">
-    <div class="tab tab-file" onclick="setView('file')">File</div>
-    <div class="tab active" id="tab-home" onclick="setView('home')">Home</div>
-    <div class="tab" id="tab-insert" onclick="setView('insert')">Insert</div>
-    <div class="tab" id="tab-data" onclick="setView('data')" style="background:#107c10">Analytics</div>
-</div>
-
-<!-- FILE RIBBON -->
-<div class="ribbon-content" id="file-ribbon">
-    <div class="group">
-        <div class="btn-row">
-            <button class="btn btn-big" onclick="newDoc()"><span>📄</span>New</button>
-            <button class="btn btn-big" onclick="window.print()"><span>🖨️</span>Print</button>
-            <button class="btn btn-big" onclick="exportPDF()"><span>📕</span>PDF</button>
-        </div>
-        <div class="group-label">Document Actions</div>
-    </div>
-    <div class="group">
-        <div class="btn-row">
-            <button class="btn btn-big" onclick="createCopy()"><span>👯</span>Copy</button>
-            <button class="btn btn-big" onclick="renameDoc()"><span>✏️</span>Rename</button>
-            <button class="btn btn-big" onclick="deleteDoc()" style="color: #d83b01;"><span>🗑️</span>Delete</button>
-        </div>
-        <div class="group-label">Storage</div>
-    </div>
-</div>
-
-<!-- HOME RIBBON -->
-<div class="ribbon-content active" id="home-ribbon">
-    <div class="group">
-        <div style="display:flex; gap:4px; margin-bottom:5px;">
-            <select onchange="execCmd('fontName', this.value)">
-                <option value="Calibri">Calibri</option>
-                <option value="Calibri Light">Calibri Light</option>
-                <option value="Times New Roman">Times New Roman</option>
-                <option value="Arial">Arial</option>
-            </select>
-            <select onchange="execCmd('fontSize', this.value)"><option value="3">11</option><option value="4">12</option><option value="5">14</option></select>
-        </div>
-        <div class="btn-row">
-            <button class="btn" onclick="execCmd('bold')"><b>B</b></button>
-            <button class="btn" onclick="execCmd('italic')"><i>I</i></button>
-            <button class="btn" onclick="execCmd('underline')"><u>U</u></button>
-            <button class="btn" onclick="execCmd('superscript')">x²</button>
-            <button class="btn" onclick="execCmd('subscript')">x₂</button>
-        </div>
-        <div class="group-label">Font</div>
-    </div>
-    <div class="group">
-        <div class="btn-row" style="margin-bottom:5px;">
-            <button class="btn" onclick="execCmd('insertUnorderedList')">•—</button>
-            <button class="btn" onclick="execCmd('insertOrderedList')">1—</button>
-        </div>
-        <div class="btn-row">
-            <button class="btn" onclick="execCmd('justifyLeft')">≡</button>
-            <button class="btn" onclick="execCmd('justifyCenter')">≣</button>
-            <button class="btn" onclick="execCmd('justifyRight')">≡</button>
-        </div>
-        <div class="group-label">Paragraph</div>
-    </div>
-</div>
-
-<!-- INSERT RIBBON -->
-<div class="ribbon-content" id="insert-ribbon">
-    <div class="group">
-        <div class="btn-row">
-            <button class="btn btn-big" onclick="insertTable()"><span>📅</span>Table</button>
-            <button class="btn btn-big" onclick="insertLink()"><span>🔗</span>Link</button>
-        </div>
-        <div class="group-label">Content</div>
-    </div>
-</div>
-
-<div class="workspace">
-    <div id="word-view" class="paper" contenteditable="true" oninput="handleInput()">Start typing...</div>
-    <div id="data-view-container">
-        <h3>Human Writing Velocity</h3>
-        <canvas id="wpmChart" height="100"></canvas>
-    </div>
-</div>
-
-<div class="status-bar">
-    <div>Words: <span id="word-count">0</span> | Events: <span id="key-count">0</span></div>
-    <div id="save-status">Synced</div>
-</div>
-
-<script>
-    let log = [], startTime = null, wpmData = [], chartInstance = null;
+let log = [], startTime = null, wpmData = [], chartInstance = null;
     const editor = document.getElementById('word-view');
 
     window.onload = () => {
@@ -144,22 +8,72 @@
         updateStats();
     };
 
+    // Velocity Tracker: Takes a snapshot every 10 seconds for the graph
+    setInterval(() => {
+        if (startTime) {
+            const text = editor.innerText.trim();
+            const words = text === "" ? 0 : text.split(/\s+/).length;
+            // Calculate WPM based on current word count vs time elapsed
+            const minutesElapsed = (Date.now() - startTime) / 60000;
+            const currentWPM = Math.round(words / (minutesElapsed || 1));
+            
+            wpmData.push(currentWPM);
+            
+            // Keep only the last 20 data points to keep the chart clean
+            if(wpmData.length > 20) wpmData.shift(); 
+        }
+    }, 10000); 
+
+    function updateChart() {
+        const ctx = document.getElementById('wpmChart').getContext('2d');
+        if(chartInstance) chartInstance.destroy();
+        
+        // If no data yet, show a starting point
+        const displayData = wpmData.length > 0 ? wpmData : [0];
+        const displayLabels = displayData.map((_, i) => i * 10 + 's');
+
+        chartInstance = new Chart(ctx, { 
+            type: 'line', 
+            data: { 
+                labels: displayLabels, 
+                datasets: [{ 
+                    label: 'Words Per Minute (WPM)', 
+                    data: displayData, 
+                    borderColor: '#107c10', 
+                    backgroundColor: 'rgba(16, 124, 16, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }] 
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'WPM' } } }
+            }
+        });
+    }
+
     function setView(id) {
         document.querySelectorAll('.ribbon-content').forEach(r => r.style.display = 'none');
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        
         if(id === 'data') {
             editor.style.display = 'none';
             document.getElementById('data-view-container').style.display = 'block';
             document.getElementById('tab-data').classList.add('active');
-            updateChart();
+            updateChart(); // Refresh chart when tab is opened
         } else {
             editor.style.display = 'block';
             document.getElementById('data-view-container').style.display = 'none';
             const rib = document.getElementById(id + '-ribbon');
             rib.style.display = 'flex';
-            if(id !== 'file') document.getElementById('tab-' + id).classList.add('active');
+            if(id !== 'file') {
+                const targetTab = document.getElementById('tab-' + id);
+                if(targetTab) targetTab.classList.add('active');
+            }
         }
     }
+
+    // ... (Keep the rest of your functions like execCmd, newDoc, etc. the same)
 
     function execCmd(c, v=null) { document.execCommand(c, false, v); logAction('format', c); autoSave(); }
     function logAction(a, val = null) { if (!startTime) startTime = Date.now(); log.push({ action: a, value: val, t: Date.now() - startTime }); }
@@ -169,28 +83,28 @@
     function calculateTrustScore() {
         let b = log.filter(e => e.k === "Backspace").length;
         let k = log.filter(e => e.type === "keystroke").length;
-        if (k < 10) return;
-        document.getElementById('trust-score').innerText = Math.min(100, Math.floor((b/k*200)+(k/10))) + "%";
+        if (k < 5) return;
+        let score = Math.min(100, Math.floor((b/k*200)+(k/10)));
+        document.getElementById('trust-score').innerText = score + "%";
     }
 
-    function updateChart() {
-        const ctx = document.getElementById('wpmChart').getContext('2d');
-        if(chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(ctx, { type: 'line', data: { labels: wpmData.map((_,i)=>i+'m'), datasets: [{ label: 'WPM', data: wpmData, borderColor: '#2b579a', fill: true }] } });
-    }
-
-    function newDoc() { if(confirm("Reset?")) { editor.innerHTML = ""; log = []; localStorage.clear(); location.reload(); } }
-    function createCopy() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([editor.innerHTML], {type: "text/html"})); a.download = "Copy.html"; a.click(); }
-    function renameDoc() { const n = prompt("Name:"); if(n) document.getElementById('doc-name').innerText = n; }
-    function deleteDoc() { if(confirm("Delete?")) { localStorage.clear(); location.reload(); } }
-    function insertTable() { document.execCommand('insertHTML', false, '<table border="1" style="width:100%"><tr><td>Cell</td><td>Cell</td></tr></table><p></p>'); }
-    function insertLink() { let u = prompt("URL:"); if(u) document.execCommand('createLink', false, u); }
+    function newDoc() { if(confirm("Reset everything?")) { editor.innerHTML = ""; log = []; localStorage.clear(); location.reload(); } }
+    function createCopy() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([editor.innerHTML], {type: "text/html"})); a.download = "Proof_Copy.html"; a.click(); }
+    function renameDoc() { const n = prompt("Document Name:"); if(n) document.getElementById('doc-name').innerText = n; }
+    function deleteDoc() { if(confirm("Delete permanently?")) { localStorage.clear(); location.reload(); } }
+    function insertTable() { document.execCommand('insertHTML', false, '<table border="1" style="width:100%; border-collapse:collapse;"><tr><td>Data</td><td>Data</td></tr></table><p></p>'); }
+    function insertLink() { let u = prompt("Paste Link:"); if(u) document.execCommand('createLink', false, u); }
     
-    editor.addEventListener('keydown', (e) => { if (!startTime) startTime = Date.now(); log.push({ k: e.key, t: Date.now() - startTime, type: 'keystroke' }); });
-    function updateStats() { const t = editor.innerText.trim(); document.getElementById('word-count').innerText = t===""?0:t.split(/\s+/).length; document.getElementById('key-count').innerText = log.length; }
+    editor.addEventListener('keydown', (e) => { 
+        if (!startTime) startTime = Date.now(); 
+        log.push({ k: e.key, t: Date.now() - startTime, type: 'keystroke' }); 
+    });
+
+    function updateStats() { 
+        const t = editor.innerText.trim(); 
+        document.getElementById('word-count').innerText = t===""?0:t.split(/\s+/).length; 
+        document.getElementById('key-count').innerText = log.length; 
+    }
     function toggleTheme() { document.body.toggleAttribute('data-theme'); localStorage.setItem('theme', document.body.hasAttribute('data-theme')?'dark':'light'); }
-    function forceSave() { autoSave(); alert("Synced."); }
-    function exportPDF() { html2pdf().from(editor).save('Document.pdf'); }
-</script>
-</body>
-</html>
+    function forceSave() { autoSave(); alert("Proof of Human DNA Logged."); }
+    function exportPDF() { html2pdf().from(editor).save('Verified_Work.pdf'); }
