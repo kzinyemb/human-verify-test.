@@ -6,27 +6,40 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --word-blue: #2b579a; --ribbon-bg: #f3f2f1; --border-color: #d2d0ce; --hover-bg: #e1dfdd; --bg-workspace: #e6e6e6; --bg-paper: white; --text-main: #323130; --status-bar: var(--word-blue); }
-        [data-theme="dark"] { --ribbon-bg: #2b2b2b; --border-color: #444; --hover-bg: #3c3c3c; --bg-workspace: #1e1e1e; --bg-paper: #2d2d2d; --text-main: #ffffff; --status-bar: #1a1a1a; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--bg-workspace); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        :root { 
+            --word-blue: #2b579a; --ribbon-bg: #f3f2f1; --border-color: #d2d0ce; 
+            --hover-bg: #e1dfdd; --bg-workspace: #e6e6e6; --bg-paper: white; 
+            --text-main: #323130; --status-bar: var(--word-blue); 
+        }
+        /* Dark Mode Override */
+        body.dark-mode { 
+            --ribbon-bg: #2b2b2b; --border-color: #444; --hover-bg: #3c3c3c; 
+            --bg-workspace: #1e1e1e; --bg-paper: #2d2d2d; --text-main: #ffffff; 
+            --status-bar: #1a1a1a; 
+        }
+        
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--bg-workspace); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; transition: background 0.2s; }
         .quick-access { background: var(--word-blue); color: white; padding: 5px 15px; display: flex; gap: 10px; font-size: 14px; align-items: center; z-index: 100; }
         .score-pill { background: #107c10; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
         .tabs { background: var(--word-blue); display: flex; padding-left: 10px; position: relative; z-index: 50; }
         .tab { padding: 8px 18px; color: white; cursor: pointer; font-size: 13px; border-radius: 4px 4px 0 0; }
         .tab.active { background: var(--ribbon-bg); color: var(--text-main); }
         .tab-file { background: #1e3e6d; font-weight: bold; margin-right: 2px; }
+        
         .ribbon-content { background: var(--ribbon-bg); height: 115px; border-bottom: 1px solid var(--border-color); display: none; padding: 0 20px; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; }
         .ribbon-content.active { display: flex; }
         .group { display: flex; flex-direction: column; align-items: center; border-right: 1px solid var(--border-color); padding: 0 12px; height: 85%; justify-content: center; }
         .btn-row { display: flex; flex-direction: row; gap: 5px; align-items: center; }
         .group-label { font-size: 10px; color: #888; margin-top: auto; padding-bottom: 2px; text-transform: uppercase; }
+        
         .btn { padding: 5px 8px; border: 1px solid transparent; background: transparent; cursor: pointer; border-radius: 3px; font-size: 14px; color: var(--text-main); display: flex; align-items: center; gap: 5px; }
         .btn:hover { background: var(--hover-bg); border-color: var(--border-color); }
         .btn-big { flex-direction: column; font-size: 11px; padding: 8px 12px; text-align: center; min-width: 65px; }
         .btn-big span { font-size: 22px; margin-bottom: 2px; }
+        
         select { padding: 3px; font-size: 12px; border: 1px solid var(--border-color); background: var(--bg-paper); color: var(--text-main); border-radius: 2px; }
         .workspace { flex-grow: 1; overflow: auto; display: flex; justify-content: center; padding: 30px; position: relative; }
-        .paper { background: var(--bg-paper); color: var(--text-main); width: 8.5in; min-height: 11in; padding: 1in; box-shadow: 0 0 15px rgba(0,0,0,0.2); outline: none; line-height: 1.5; font-family: 'Calibri', sans-serif; }
+        .paper { background: var(--bg-paper); color: var(--text-main); width: 8.5in; min-height: 11in; padding: 1in; box-shadow: 0 0 15px rgba(0,0,0,0.2); outline: none; line-height: 1.5; font-family: 'Calibri', sans-serif; transition: background 0.2s, color 0.2s; }
         #data-view-container { display: none; width: 85%; background: var(--bg-paper); padding: 30px; border-radius: 8px; }
         .status-bar { background: var(--status-bar); color: white; padding: 4px 20px; font-size: 11px; display: flex; justify-content: space-between; }
     </style>
@@ -34,8 +47,8 @@
 <body>
 
 <div class="quick-access">
-    <div onclick="autoSave()" style="cursor:pointer">💾</div>
-    <div onclick="toggleTheme()" style="cursor:pointer">🌙</div>
+    <div onclick="autoSave()" style="cursor:pointer" title="Save">💾</div>
+    <div onclick="toggleTheme()" style="cursor:pointer" id="theme-btn" title="Toggle Dark Mode">🌙</div>
     <div class="score-pill">Verification: <span id="trust-score">0%</span></div>
     <span id="doc-name" style="margin-left:auto; font-weight:bold; font-size:12px; cursor:pointer;" onclick="renameDoc()">Untitled Document</span>
 </div>
@@ -133,7 +146,11 @@
     const editor = document.getElementById('word-view');
 
     window.onload = () => {
-        if(localStorage.getItem('theme') === 'dark') document.body.setAttribute('data-theme', 'dark');
+        // Load Dark Mode Preference
+        if(localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('theme-btn').innerText = "☀️";
+        }
         const savedText = localStorage.getItem('hv_content');
         if (savedText) editor.innerHTML = savedText;
         updateStats();
@@ -216,8 +233,10 @@
     function insertLink() { let u = prompt("URL:"); if(u) document.execCommand('createLink', false, u); }
     
     function toggleTheme() { 
-        document.body.toggleAttribute('data-theme'); 
-        localStorage.setItem('theme', document.body.hasAttribute('data-theme') ? 'dark' : 'light'); 
+        document.body.classList.toggle('dark-mode'); 
+        const isDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light'); 
+        document.getElementById('theme-btn').innerText = isDark ? "☀️" : "🌙";
     }
     function autoSave() { alert("Saved successfully."); }
     function exportPDF() { html2pdf().from(editor).save('Verified_Work.pdf'); }
