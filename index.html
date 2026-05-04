@@ -26,8 +26,8 @@
         
         .btn { padding: 5px 8px; border: 1px solid transparent; background: transparent; cursor: pointer; border-radius: 3px; font-size: 14px; color: var(--text-main); display: flex; align-items: center; gap: 5px; }
         .btn:hover { background: var(--hover-bg); border-color: var(--border-color); }
-        .btn-big { flex-direction: column; font-size: 11px; padding: 8px 12px; min-width: 65px; text-align: center; }
-        .btn-big span { font-size: 22px; margin-bottom: 2px; }
+        .btn-big { flex-direction: column; font-size: 11px; padding: 8px 10px; min-width: 60px; text-align: center; }
+        .btn-big span { font-size: 20px; margin-bottom: 2px; }
         
         .workspace { flex-grow: 1; overflow: auto; display: flex; justify-content: center; padding: 30px; }
         .paper { background: var(--bg-paper); color: var(--text-main); width: 8.5in; min-height: 11in; padding: 1in; box-shadow: 0 0 15px rgba(0,0,0,0.2); outline: none; line-height: 1.5; font-family: 'Calibri', sans-serif; }
@@ -52,6 +52,7 @@
     <div class="tab" id="tab-data" onclick="setView('data')" style="background:#107c10">Forensics</div>
 </div>
 
+<!-- FILE RIBBON -->
 <div class="ribbon-content" id="file-ribbon">
     <div class="group">
         <div class="btn-row">
@@ -62,15 +63,18 @@
         <div class="group-label">Document</div>
     </div>
     <div class="group">
-        <button class="btn btn-big" onclick="renameDoc()"><span>✏️</span>Rename</button>
-        <button class="btn btn-big" onclick="deleteDoc()" style="color:#d83b01"><span>🗑️</span>Delete</button>
+        <div class="btn-row">
+            <button class="btn btn-big" onclick="renameDoc()"><span>✏️</span>Rename</button>
+            <button class="btn btn-big" onclick="deleteDoc()" style="color:#d83b01"><span>🗑️</span>Delete</button>
+        </div>
         <div class="group-label">Manage</div>
     </div>
 </div>
 
+<!-- HOME RIBBON -->
 <div class="ribbon-content active" id="home-ribbon">
     <div class="group">
-        <select onchange="execCmd('fontName', this.value)" style="width: 150px;">
+        <select onchange="execCmd('fontName', this.value)" style="width: 150px; margin-bottom: 5px;">
             <option value="Calibri">Calibri</option>
             <option value="Calibri Light">Calibri Light</option>
             <option value="Times New Roman">Times New Roman</option>
@@ -80,6 +84,8 @@
             <button class="btn" onclick="execCmd('bold')"><b>B</b></button>
             <button class="btn" onclick="execCmd('italic')"><i>I</i></button>
             <button class="btn" onclick="execCmd('underline')"><u>U</u></button>
+            <button class="btn" onclick="execCmd('superscript')">x²</button>
+            <button class="btn" onclick="execCmd('subscript')">x₂</button>
         </div>
         <div class="group-label">Font</div>
     </div>
@@ -130,7 +136,7 @@
         updateStats();
     };
 
-    // VELOCITY TRACKER
+    // VELOCITY TRACKER (10s intervals)
     setInterval(() => {
         if (startTime && editor.style.display !== 'none') {
             const text = editor.innerText.trim();
@@ -147,16 +153,12 @@
         const charCount = text.length;
         const keyCount = log.length;
         
-        if (charCount === 0) {
-            updateScoreUI(0);
-            return;
-        }
+        if (charCount === 0) { updateScoreUI(0); return; }
 
-        // BIOMETRIC RULE 1: Integrity Ratio
-        // If characters on screen > actual physical keys pressed, someone pasted text.
+        // Rule 1: Integrity Ratio (Pasted Text Detection)
         let integrityRatio = Math.min(1, keyCount / charCount);
         
-        // BIOMETRIC RULE 2: Rhythm Variance
+        // Rule 2: Rhythm Variance (Biological bursts)
         let latencies = [];
         for(let i = Math.max(0, log.length - 15); i < log.length - 1; i++) {
             latencies.push(log[i+1].t - log[i].t);
@@ -168,15 +170,13 @@
         }
         let rhythmFactor = Math.min(20, variance / 1000);
 
-        // BIOMETRIC RULE 3: Backspace Analysis
+        // Rule 3: Backspace Analysis
         let b = log.filter(e => e.k === "Backspace").length;
         let backspaceFactor = keyCount > 0 ? Math.min(20, (b / keyCount) * 200) : 0;
 
-        // FINAL CALCULATION
-        // Integrity carries 60% of the weight. Paste detected = Score drops.
         let finalScore = (integrityRatio * 60) + rhythmFactor + backspaceFactor;
 
-        // Hard penalty for massive text growth without keystrokes
+        // Severe penalty for paste without typing
         if (integrityRatio < 0.2 && charCount > 100) finalScore = finalScore * 0.1;
 
         updateScoreUI(Math.floor(finalScore));
