@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Human-Verify | Analytics & DNA</title>
+    <title>Human-Verify | Forensic Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -12,7 +11,9 @@
         
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--bg-workspace); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         .quick-access { background: var(--word-blue); color: white; padding: 5px 15px; display: flex; gap: 10px; font-size: 14px; align-items: center; z-index: 100; }
-        .score-pill { background: #107c10; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+        .score-pill { background: #107c10; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; transition: background 0.3s; }
+        .score-low { background: #d83b01 !important; }
+        
         .tabs { background: var(--word-blue); display: flex; padding-left: 10px; position: relative; z-index: 50; }
         .tab { padding: 8px 18px; color: white; cursor: pointer; font-size: 13px; border-radius: 4px 4px 0 0; }
         .tab.active { background: var(--ribbon-bg); color: var(--text-main); }
@@ -32,7 +33,7 @@
         .paper { background: var(--bg-paper); color: var(--text-main); width: 8.5in; min-height: 11in; padding: 1in; box-shadow: 0 0 15px rgba(0,0,0,0.2); outline: none; line-height: 1.5; font-family: 'Calibri', sans-serif; }
         #data-view-container { display: none; width: 85%; background: var(--bg-paper); padding: 30px; border-radius: 8px; color: var(--text-main); }
         .status-bar { background: var(--status-bar); color: white; padding: 4px 20px; font-size: 11px; display: flex; justify-content: space-between; }
-        select { background: var(--bg-paper); color: var(--text-main); border: 1px solid var(--border-color); padding: 2px; }
+        select { background: var(--bg-paper); color: var(--text-main); border: 1px solid var(--border-color); padding: 2px; border-radius: 2px; }
     </style>
 </head>
 <body>
@@ -40,7 +41,7 @@
 <div class="quick-access">
     <div onclick="autoSave()" style="cursor:pointer" title="Save">💾</div>
     <div onclick="toggleTheme()" id="theme-btn" style="cursor:pointer">🌙</div>
-    <div class="score-pill">Verification: <span id="trust-score">0%</span></div>
+    <div class="score-pill" id="score-container">Human Integrity: <span id="trust-score">0%</span></div>
     <span id="doc-name" style="margin-left:auto; font-weight:bold; font-size:12px; cursor:pointer;" onclick="renameDoc()">Untitled Document</span>
 </div>
 
@@ -48,10 +49,9 @@
     <div class="tab" onclick="setView('file')">File</div>
     <div class="tab active" id="tab-home" onclick="setView('home')">Home</div>
     <div class="tab" id="tab-insert" onclick="setView('insert')">Insert</div>
-    <div class="tab" id="tab-data" onclick="setView('data')" style="background:#107c10">Analytics</div>
+    <div class="tab" id="tab-data" onclick="setView('data')" style="background:#107c10">Forensics</div>
 </div>
 
-<!-- RIBBONS -->
 <div class="ribbon-content" id="file-ribbon">
     <div class="group">
         <div class="btn-row">
@@ -62,6 +62,7 @@
         <div class="group-label">Document</div>
     </div>
     <div class="group">
+        <button class="btn btn-big" onclick="renameDoc()"><span>✏️</span>Rename</button>
         <button class="btn btn-big" onclick="deleteDoc()" style="color:#d83b01"><span>🗑️</span>Delete</button>
         <div class="group-label">Manage</div>
     </div>
@@ -69,7 +70,7 @@
 
 <div class="ribbon-content active" id="home-ribbon">
     <div class="group">
-        <select onchange="execCmd('fontName', this.value)">
+        <select onchange="execCmd('fontName', this.value)" style="width: 150px;">
             <option value="Calibri">Calibri</option>
             <option value="Calibri Light">Calibri Light</option>
             <option value="Times New Roman">Times New Roman</option>
@@ -90,6 +91,7 @@
         </div>
         <select onchange="setLineSpacing(this.value)" style="margin-top:5px;">
             <option value="1.0">1.0 Spacing</option>
+            <option value="1.15">1.15 Spacing</option>
             <option value="1.5">1.5 Spacing</option>
             <option value="2.0">2.0 Spacing</option>
         </select>
@@ -105,9 +107,9 @@
 </div>
 
 <div class="workspace">
-    <div id="word-view" class="paper" contenteditable="true" oninput="handleInput()">Start typing to generate verification data...</div>
+    <div id="word-view" class="paper" contenteditable="true" oninput="handleInput()">Start typing to begin forensic logging...</div>
     <div id="data-view-container">
-        <h2>Writing Analytics</h2>
+        <h2>Keystroke Velocity (Forensics)</h2>
         <div style="height: 350px;"><canvas id="wpmChart"></canvas></div>
     </div>
 </div>
@@ -141,17 +143,22 @@
     }, 10000);
 
     function calculateTrustScore() {
-        let b = log.filter(e => e.k === "Backspace").length;
-        let k = log.length;
-        if (k < 10) return;
+        const text = editor.innerText.trim();
+        const charCount = text.length;
+        const keyCount = log.length;
+        
+        if (charCount === 0) {
+            updateScoreUI(0);
+            return;
+        }
 
-        // 1. Backspace Factor (Human messiness)
-        let backspaceRatio = (b / k);
-        let errorScore = backspaceRatio > 0.05 ? 50 : (backspaceRatio * 1000);
-
-        // 2. Rhythm Factor (Biological variance)
+        // BIOMETRIC RULE 1: Integrity Ratio
+        // If characters on screen > actual physical keys pressed, someone pasted text.
+        let integrityRatio = Math.min(1, keyCount / charCount);
+        
+        // BIOMETRIC RULE 2: Rhythm Variance
         let latencies = [];
-        for(let i = Math.max(0, log.length - 10); i < log.length - 1; i++) {
+        for(let i = Math.max(0, log.length - 15); i < log.length - 1; i++) {
             latencies.push(log[i+1].t - log[i].t);
         }
         let variance = 0;
@@ -159,10 +166,28 @@
             let avg = latencies.reduce((a,b) => a+b) / latencies.length;
             variance = latencies.map(x => Math.pow(x - avg, 2)).reduce((a,b) => a+b) / latencies.length;
         }
-        let rhythmScore = Math.min(50, variance / 500);
+        let rhythmFactor = Math.min(20, variance / 1000);
 
-        let finalScore = Math.floor(errorScore + rhythmScore);
-        document.getElementById('trust-score').innerText = Math.min(100, finalScore) + "%";
+        // BIOMETRIC RULE 3: Backspace Analysis
+        let b = log.filter(e => e.k === "Backspace").length;
+        let backspaceFactor = keyCount > 0 ? Math.min(20, (b / keyCount) * 200) : 0;
+
+        // FINAL CALCULATION
+        // Integrity carries 60% of the weight. Paste detected = Score drops.
+        let finalScore = (integrityRatio * 60) + rhythmFactor + backspaceFactor;
+
+        // Hard penalty for massive text growth without keystrokes
+        if (integrityRatio < 0.2 && charCount > 100) finalScore = finalScore * 0.1;
+
+        updateScoreUI(Math.floor(finalScore));
+    }
+
+    function updateScoreUI(score) {
+        const span = document.getElementById('trust-score');
+        const pill = document.getElementById('score-container');
+        span.innerText = score + "%";
+        if (score < 40) pill.classList.add('score-low');
+        else pill.classList.remove('score-low');
     }
 
     function updateChart() {
@@ -174,7 +199,7 @@
             data: {
                 labels: dataPoints.map((_, i) => (i * 10) + 's'),
                 datasets: [{
-                    label: 'Words Per Minute',
+                    label: 'WPM',
                     data: dataPoints,
                     borderColor: '#107c10',
                     backgroundColor: 'rgba(16, 124, 16, 0.1)',
@@ -203,7 +228,7 @@
     }
 
     function handleInput() { updateStats(); autoSave(); calculateTrustScore(); }
-    function execCmd(c, v=null) { document.execCommand(c, false, v); }
+    function execCmd(c, v=null) { document.execCommand(c, false, v); editor.focus(); }
     function setLineSpacing(v) { editor.style.lineHeight = v; }
     function autoSave() { localStorage.setItem('hv_content', editor.innerHTML); }
     
@@ -226,12 +251,18 @@
         document.getElementById('theme-btn').innerText = isDark ? "☀️" : "🌙";
     }
 
-    function newDoc() { if(confirm("Reset Everything?")) { localStorage.clear(); location.reload(); } }
-    function renameDoc() { let n = prompt("Name:"); if(n) document.getElementById('doc-name').innerText = n; }
+    function newDoc() { if(confirm("Clear Everything?")) { localStorage.clear(); location.reload(); } }
+    function renameDoc() { let n = prompt("Document Name:"); if(n) document.getElementById('doc-name').innerText = n; }
     function deleteDoc() { if(confirm("Delete permanently?")) { localStorage.clear(); location.reload(); } }
-    function createCopy() { let a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([editor.innerHTML], {type: "text/html"})); a.download = "Copy.html"; a.click(); }
-    function exportPDF() { html2pdf().from(editor).save('Document.pdf'); }
-    function insertTable() { document.execCommand('insertHTML', false, '<table border="1" style="width:100%; border-collapse:collapse;"><tr><td>-</td><td>-</td></tr></table><p></p>'); }
+    function createCopy() { 
+        const blob = new Blob([editor.innerHTML], {type: "text/html"});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = document.getElementById('doc-name').innerText + "_Copy.html";
+        a.click(); 
+    }
+    function exportPDF() { html2pdf().from(editor).save('Verified_Work.pdf'); }
+    function insertTable() { document.execCommand('insertHTML', false, '<table border="1" style="width:100%; border-collapse:collapse; margin-bottom: 10px;"><tr><td>&nbsp;</td><td>&nbsp;</td></tr></table><p></p>'); }
 </script>
 </body>
 </html>
