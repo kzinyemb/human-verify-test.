@@ -58,12 +58,13 @@
         <div class="btn-row">
             <button class="btn btn-big" onclick="newDoc()"><span>📄</span>New</button>
             <button class="btn btn-big" onclick="exportPDF()"><span>📕</span>PDF</button>
-            <button class="btn btn-big" onclick="createCopy()"><span>👯</span>Copy</button>
+            <button class="btn btn-big" onclick="printDoc()"><span>🖨️</span>Print</button>
         </div>
         <div class="group-label">Document</div>
     </div>
     <div class="group">
         <div class="btn-row">
+            <button class="btn btn-big" onclick="createCopy()"><span>👯</span>Copy</button>
             <button class="btn btn-big" onclick="renameDoc()"><span>✏️</span>Rename</button>
             <button class="btn btn-big" onclick="deleteDoc()" style="color:#d83b01"><span>🗑️</span>Delete</button>
         </div>
@@ -136,7 +137,7 @@
         updateStats();
     };
 
-    // VELOCITY TRACKER (10s intervals)
+    // VELOCITY TRACKER
     setInterval(() => {
         if (startTime && editor.style.display !== 'none') {
             const text = editor.innerText.trim();
@@ -155,10 +156,8 @@
         
         if (charCount === 0) { updateScoreUI(0); return; }
 
-        // Rule 1: Integrity Ratio (Pasted Text Detection)
         let integrityRatio = Math.min(1, keyCount / charCount);
         
-        // Rule 2: Rhythm Variance (Biological bursts)
         let latencies = [];
         for(let i = Math.max(0, log.length - 15); i < log.length - 1; i++) {
             latencies.push(log[i+1].t - log[i].t);
@@ -170,13 +169,11 @@
         }
         let rhythmFactor = Math.min(20, variance / 1000);
 
-        // Rule 3: Backspace Analysis
         let b = log.filter(e => e.k === "Backspace").length;
         let backspaceFactor = keyCount > 0 ? Math.min(20, (b / keyCount) * 200) : 0;
 
         let finalScore = (integrityRatio * 60) + rhythmFactor + backspaceFactor;
 
-        // Severe penalty for paste without typing
         if (integrityRatio < 0.2 && charCount > 100) finalScore = finalScore * 0.1;
 
         updateScoreUI(Math.floor(finalScore));
@@ -254,6 +251,7 @@
     function newDoc() { if(confirm("Clear Everything?")) { localStorage.clear(); location.reload(); } }
     function renameDoc() { let n = prompt("Document Name:"); if(n) document.getElementById('doc-name').innerText = n; }
     function deleteDoc() { if(confirm("Delete permanently?")) { localStorage.clear(); location.reload(); } }
+    
     function createCopy() { 
         const blob = new Blob([editor.innerHTML], {type: "text/html"});
         const a = document.createElement('a');
@@ -261,7 +259,9 @@
         a.download = document.getElementById('doc-name').innerText + "_Copy.html";
         a.click(); 
     }
+
     function exportPDF() { html2pdf().from(editor).save('Verified_Work.pdf'); }
+    function printDoc() { window.print(); }
     function insertTable() { document.execCommand('insertHTML', false, '<table border="1" style="width:100%; border-collapse:collapse; margin-bottom: 10px;"><tr><td>&nbsp;</td><td>&nbsp;</td></tr></table><p></p>'); }
 </script>
 </body>
